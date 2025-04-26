@@ -1,44 +1,22 @@
 import streamlit as st
 from backend import HabitManager
 
-
-# def start_page():
-#     st.subheader("What would you like to do today")
-#     action = st.selectbox("Select an action",
-#                           ("log for an existing habit", "Add a new habit", "Analyse current habits"), key=1)
-#     return action
-
-def create_habit(name, frequency, category):
-    global list_of_habits, kai_habits
-    new_habit = kai_habits.add_a_new_habit(name, frequency, category)
-    list_of_habits.append(new_habit)
-    # st.rerun()
-    # start_page()
-
-
-# List of Habits
-list_of_habits = []
-
 st.title("Habit Tracker App")
-st.subheader("Hello Kai")
 
-st.subheader("What would you like to do today")
-action = st.selectbox("Select an action",
-                      ("log for an existing habit", "Add a new habit", "Analyse current habits"), key="action")
+# Initialising the HabitManager
+if "habits" not in st.session_state:
+    st.session_state.habits = HabitManager()
 
-match action:
-    case "Add a new habit":
-        name_of_habit = st.text_input("Enter a new habit: ", placeholder="Clean the house")
-        frequency_of_habit = st.radio("How often would you like to do this?", ("Daily", "Weekly"))
-        category_of_habit = st.selectbox("What category would this habit fall under?", ("Health", "Productivity",
-                                                                                        "Learning and Growth"),
-                                         key="category")
-        kai_habits = HabitManager()
+habits = st.session_state.habits
 
-        st.button(label="Create Habit",
-                  on_click=kai_habits.create_habit(name=name_of_habit,
-                                                   frequency=frequency_of_habit,
-                                                   category=category_of_habit),
-                  key="create habit")
+# Sidebar
+st.sidebar.header("Create a new Habit")
+with st.sidebar.form(key="create_habit_form"):
+    habit_name = st.text_input(label="Habit Name", placeholder="Clean the house")
+    habit_category = st.radio(label="Category", options=("Health", "Productivity", "Personal Growth"))
+    habit_frequency = st.radio(label="Frequency", options=("Daily", "Weekly"))
+    create_button = st.form_submit_button(label="Create Habit")
+    if create_button:
+        habits.create_habit(name=habit_name, category=habit_category, frequency=habit_frequency)
+        st.success(f"Habit '{habit_name}' created")
 
-        print(kai_habits.habits)
