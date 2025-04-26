@@ -4,6 +4,8 @@
 # Create classes for different kinds of habits - Health, Productivity, Learning and Growth, Financial Habits,
 # social and relationship habits, spiritual and mindfulness, create habits
 
+from datetime import datetime
+
 
 # class Habit:
 #     habits = [["Run", "Health", "Daily"], ["Study", "Productivity", "Daily"], ["Clean", "Productivity", "Weekly"]]
@@ -44,12 +46,17 @@ class Habit:
         self.frequency = frequency
         self.log = []
 
-    def log_progress(self, entry):
+    def log_progress(self, note):
+        entry = {
+            "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M"),
+            "note": note
+        }
         self.log.append(entry)
 
     def get_stats(self):
         return {
-            "total_entries": len(self.log)
+            "total_entries": len(self.log),
+            "last_entry": self.log[-1] if self.log else None
         }
 
 
@@ -85,17 +92,23 @@ class HabitManager:
 
 
 # Test
-# kai_habits2 = HabitManager()
-# new_habit = kai_habits2.create_habit(name="Drink Water", category="Health", frequency="Daily")
-#
-# for habits in kai_habits2.habits:
-#     print(habits.name)
-#
-# kai_habits2.log_habit("Drink Water", "Drank 8 glasses of water")
-# kai_habits2.log_habit("Workout", "Exercised for 30 minutes")
-#
-# print("Habit Stats")
-#
-# for habit in ["Drink Water", "Workout"]:
-#     stats = kai_habits2.analyse_habit(habit)
-#     print(f"{habit}: {stats}")
+kai_habits2 = HabitManager()
+new_habit = kai_habits2.create_habit(name="Drink Water", category="Health", frequency="Daily")
+
+for habits in kai_habits2.habits:
+    print(habits.name)
+
+kai_habits2.log_habit("Drink Water", "Drank 8 glasses of water")
+kai_habits2.log_habit("Workout", "Exercised for 30 minutes")
+
+print("Habit Stats")
+
+for habit in ["Drink Water", "Workout"]:
+    stats = kai_habits2.analyse_habit(habit)
+    print(f"{habit}: {stats}")
+
+stats = kai_habits2.analyse_habit("Drink Water")
+print("Habit analysis for Drink Water")
+if stats["last_entry"]:
+    print(f"Last Log Time: {stats["last_entry"]["timestamp"]}")
+    print(f"Last Log Note: {stats["last_entry"]["note"]}")
