@@ -69,6 +69,19 @@ class Habit:
             time_str = entry["timestamp"]
             print(f"{index}. [{time_str}] - {entry["note"]}")
 
+    def save_log_to_file(self, filename):
+        if not self.log:
+            print(f"No entries to save for {self.name}")
+            return
+
+        with open(filename, "w", encoding="utf-8") as file:
+            file.write(f"---Habit Log: {self.name}---\n\n")
+            for index, entry in enumerate(self.log, 1):
+                time_str = entry["timestamp"]
+                file.write(f"{index}. [{time_str}] - {entry["note"]}\n")
+
+        print(f"Log for '{self.name}' saved to '{filename}'")
+
 
 class HabitManager:
     def __init__(self):
@@ -135,3 +148,6 @@ kai_habits2.log_habit("Practice Piano", "Practiced Star Walking")
 
 for habits in kai_habits2.habits:
     habits.show_log()
+
+for habits in kai_habits2.habits:
+    habits.save_log_to_file(f"{habits.name}.txt")
