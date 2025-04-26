@@ -20,3 +20,29 @@ with st.sidebar.form(key="create_habit_form"):
         habits.create_habit(name=habit_name, category=habit_category, frequency=habit_frequency)
         st.success(f"Habit '{habit_name}' created")
 
+# Main Area
+st.header("Manage Your Habits")
+
+habit_list = habits.get_habit_names()
+if habit_list:
+    selected_habit_names = st.selectbox(label="Select a Habit", options=habit_list)
+    selected_habit = habits.get_habit_by_name(selected_habit_names)
+
+    st.subheader(f"Habit: {selected_habit.name}")
+    st.write(f"**Category:** {selected_habit.category}")
+    st.write(f"**Total Entries:** {selected_habit.get_stats()['total_entries']}")
+
+    # Log Progress
+    with st.form(key="log_form"):
+        note = st.text_area(label="Log your progress")
+        log_button = st.form_submit_button(label="Add Log Entry")
+        if log_button:
+            selected_habit.log_progress(note)
+            st.success("Log entry added!")
+
+    # View Habit Log
+    st.subheader("Habit Log Timeline")
+    logs = selected_habit.show_log()
+    st.text_area(label="Timeline", value=logs, height=300)
+else:
+    st.info("No habits yet. Create a new one from the sidebar!")

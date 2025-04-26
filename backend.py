@@ -113,6 +113,15 @@ class HabitManager:
                 return habit.get_stats()
         return None
 
+    def get_habit_names(self):
+        return [habit.name for habit in self.habits]
+
+    def get_habit_by_name(self, name):
+        for habit in self.habits:
+            if habit.name == name:
+                return habit
+        return None
+
 
 # Test
 kai_habits2 = HabitManager()
