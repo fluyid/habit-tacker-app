@@ -59,6 +59,16 @@ class Habit:
             "last_entry": self.log[-1] if self.log else None
         }
 
+    def show_log(self):
+        if not self.log:
+            print(f"No entries for habit '{self.name}'")
+            return
+
+        print(f"\n----Log for '{self.name}'-----")
+        for index, entry in enumerate(self.log, 1):
+            time_str = entry["timestamp"]
+            print(f"{index}. [{time_str}] - {entry["note"]}")
+
 
 class HabitManager:
     def __init__(self):
@@ -112,3 +122,16 @@ print("Habit analysis for Drink Water")
 if stats["last_entry"]:
     print(f"Last Log Time: {stats["last_entry"]["timestamp"]}")
     print(f"Last Log Note: {stats["last_entry"]["note"]}")
+
+new_habit2 = kai_habits2.create_habit(
+    name="Practice Piano",
+    category="Growth",
+    frequency="Daily"
+)
+
+kai_habits2.log_habit("Practice Piano", "Practiced 'Sadness and Sorrow'")
+kai_habits2.log_habit("Practice Piano", "Practiced Heaven Shaking")
+kai_habits2.log_habit("Practice Piano", "Practiced Star Walking")
+
+for habits in kai_habits2.habits:
+    habits.show_log()
