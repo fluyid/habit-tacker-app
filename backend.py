@@ -5,6 +5,7 @@
 # social and relationship habits, spiritual and mindfulness, create habits
 
 from datetime import datetime
+import pandas as pd
 
 
 # class Habit:
@@ -86,6 +87,22 @@ class Habit:
                 file.write(f"{index}. [{time_str}] - {entry["note"]}\n")
 
         print(f"Log for '{self.name}' saved to '{filename}'")
+
+    def get_logs_as_dataframe(self):
+        if not self.log:
+            return pd.DataFrame(columns=["Date", "Entries"])
+
+        dates = [entry["timestamp"].date() for entry in self.log]
+        date_counts = pd.Series(dates).value_counts().sort_index()
+        # print(date_counts)
+        # print(date_counts.index)
+        # print(date_counts.values)
+
+        df = pd.DataFrame({
+            "Date": date_counts.index,
+            "Entries": date_counts.values
+        })
+        return df
 
 
 class HabitManager:

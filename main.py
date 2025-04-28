@@ -92,5 +92,16 @@ if habit_list:
     print(f"Selected Habit: {selected_habit.name}")
     print(logs)
     st.text_area("Timeline", logs, height=300)
+
+    # Habit Progress Chart
+    st.subheader("Habit Progress Chart")
+    df = selected_habit.get_logs_as_dataframe()
+    if df.empty:
+        st.info("No progress entries yet to show on the chart")
+    else:
+        # Line chart for consistency over time
+        st.line_chart(data=df.set_index("Date"))
+        # Bar chart for how active I am on different days
+        st.bar_chart(data=df.set_index("Date"))
 else:
     st.info("No habits yet. Create a new one from the sidebar!")
