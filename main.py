@@ -1,11 +1,55 @@
 import streamlit as st
-from backend import HabitManager
+from backend import HabitManager, Habit
+import json
+import os
+from datetime import datetime
+
+
+# Functions
+# Saving to a json file
+def save_habits(habits, filename="habits.json"):
+    habits_data = []
+    for habit in habits.habits:
+        habits_data.append({
+            "name": habit.name,
+            "category": habit.category,
+            "frequency": habit.frequency,
+            "log": [
+                {"timestamp": entry["timestamp"].isoformat(), "note": entry["note"]} for entry in habit.log
+            ]
+        })
+    with open(filename, "w", encoding="utf-8") as file:
+        json.dump(obj=habits_data, fp=file, indent=4)
+
+
+# Loading the habits from a json file
+def load_habits(filename="habits.json"):
+    habits = HabitManager()
+    if os.path.exists(filename):
+        with open(filename, "r", encoding="utf-8") as file:
+            habits_data = json.load(file)
+            habits.habits = []
+            for habit_data in habits_data:
+                habit = Habit(
+                    name=habit_data["name"],
+                    category=habit_data["category"],
+                    frequency=habit_data["frequency"]
+                )
+                habit.log = [
+                    {
+                        "timestamp": datetime.fromisoformat(entry["timestamp"]),
+                        "note": entry["note"]
+                    } for entry in habit_data["log"]
+                ]
+                habits.habits.append(habit)
+    return habits
+
 
 st.title("Habit Tracker App")
 
 # Initialising the HabitManager
 if "habits" not in st.session_state:
-    st.session_state.habits = HabitManager()
+    st.session_state.habits = load_habits()
 
 habits = st.session_state.habits
 
@@ -38,11 +82,15 @@ if habit_list:
         log_button = st.form_submit_button(label="Add Log Entry")
         if log_button:
             selected_habit.log_progress(note)
+            save_habits(habits)
             st.success("Log entry added!")
 
     # View Habit Log
     st.subheader("Habit Log Timeline")
     logs = selected_habit.show_log()
-    st.text_area(label="Timeline", value=logs, height=300)
+    print("----Testing Logs")
+    print(f"Selected Habit: {selected_habit.name}")
+    print(logs)
+    st.text_area("Timeline", logs, height=300)
 else:
     st.info("No habits yet. Create a new one from the sidebar!")

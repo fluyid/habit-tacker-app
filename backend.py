@@ -48,7 +48,7 @@ class Habit:
 
     def log_progress(self, note):
         entry = {
-            "timestamp": datetime.now().strftime("%d/%m/%Y %H:%M"),
+            "timestamp": datetime.now(),
             "note": note
         }
         self.log.append(entry)
@@ -61,13 +61,18 @@ class Habit:
 
     def show_log(self):
         if not self.log:
-            print(f"No entries for habit '{self.name}'")
-            return
+            # print(f"No entries for habit '{self.name}'")
+            return "No entries yet"
 
-        print(f"\n----Log for '{self.name}'-----")
+        # print(f"\n----Log for '{self.name}'-----")
+        # for index, entry in enumerate(self.log, 1):
+        #     time_str = entry["timestamp"].strftime("%d/%m/%Y %H:%M")
+        #     print(f"{index}. [{time_str}] - {entry["note"]}")
+        logs = ""
         for index, entry in enumerate(self.log, 1):
-            time_str = entry["timestamp"]
-            print(f"{index}. [{time_str}] - {entry["note"]}")
+            time_str = entry["timestamp"].strftime("%d/%m/%Y %H:%M")
+            logs += f"{index}. [{time_str}] - {entry['note']}\n"
+        return logs
 
     def save_log_to_file(self, filename):
         if not self.log:
@@ -77,7 +82,7 @@ class Habit:
         with open(filename, "w", encoding="utf-8") as file:
             file.write(f"---Habit Log: {self.name}---\n\n")
             for index, entry in enumerate(self.log, 1):
-                time_str = entry["timestamp"]
+                time_str = entry["timestamp"].strftime("%d/%m/%Y %H:%M")
                 file.write(f"{index}. [{time_str}] - {entry["note"]}\n")
 
         print(f"Log for '{self.name}' saved to '{filename}'")
