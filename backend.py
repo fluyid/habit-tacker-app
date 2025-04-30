@@ -111,12 +111,20 @@ class Habit:
         dates = sorted({entry["timestamp"].date() for entry in self.log}, reverse=True)
         streak = 0
         today = datetime.now().date()
-        for i, date in enumerate(dates):
-            expected_date = today - timedelta(days=i)
-            if date == expected_date:
-                streak += 1
-            else:
-                break
+        if self.frequency == "Daily":
+            for i, date in enumerate(dates):
+                expected_date = today - timedelta(days=i)
+                if date == expected_date:
+                    streak += 1
+                else:
+                    break
+        else:
+            for i, date in enumerate(dates):
+                expected_date = today - timedelta(days=7*i)
+                if date == expected_date:
+                    streak += 1
+                else:
+                    break
         return streak
 
 
