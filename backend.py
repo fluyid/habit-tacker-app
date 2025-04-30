@@ -4,7 +4,7 @@
 # Create classes for different kinds of habits - Health, Productivity, Learning and Growth, Financial Habits,
 # social and relationship habits, spiritual and mindfulness, create habits
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import pandas as pd
 
 
@@ -103,6 +103,21 @@ class Habit:
             "Entries": date_counts.values
         })
         return df
+
+    def calculate_streak(self):
+        if not self.log:
+            return 0
+
+        dates = sorted({entry["timestamp"].date() for entry in self.log}, reverse=True)
+        streak = 0
+        today = datetime.now().date()
+        for i, date in enumerate(dates):
+            expected_date = today - timedelta(days=i)
+            if date == expected_date:
+                streak += 1
+            else:
+                break
+        return streak
 
 
 class HabitManager:

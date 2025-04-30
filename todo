@@ -1,0 +1,5 @@
+1. Fix the streak so that it works properly for Daily and Weekly
+2. Figure out how to generate the report to a pdf
+3. Try making the UI more simple and less cluttery
+4. Maybe try adding some sort of authentication (kinda optional)
+5. If the steps above can be completed, start working on the backend to act as a backend for a swift app

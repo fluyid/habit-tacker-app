@@ -103,5 +103,14 @@ if habit_list:
         st.line_chart(data=df.set_index("Date"))
         # Bar chart for how active I am on different days
         st.bar_chart(data=df.set_index("Date"))
+
+    # Habit Streak
+    st.subheader("Habit Streak")
+
+    streak_count = selected_habit.calculate_streak()
+    if streak_count > 0:
+        st.success(f"You have a {streak_count}🔥 day streak going!")
+    else:
+        st.info("You currently don't have a streak :/ Let's start today!")
 else:
     st.info("No habits yet. Create a new one from the sidebar!")
