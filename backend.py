@@ -48,6 +48,9 @@ class Habit:
         self.log = []
 
     def log_progress(self, note):
+        """This method logs the progress. The note must be added by the user. However, the time would automatically
+        be added. The data added here will be used for displaying the log, analysing the data and even generating
+        the pdf"""
         entry = {
             "timestamp": datetime.now(),
             "note": note
@@ -55,12 +58,15 @@ class Habit:
         self.log.append(entry)
 
     def get_stats(self):
+        """This method would return the total number of entries as well as when was the last entry"""
         return {
             "total_entries": len(self.log),
             "last_entry": self.log[-1] if self.log else None
         }
 
     def show_log(self):
+        """This method would return the logs of the selected habit. It would return an index number, date and time
+        of the habit as well as the note that was added to it in log_progress(if any note was added)"""
         if not self.log:
             # print(f"No entries for habit '{self.name}'")
             return "No entries yet"
@@ -76,6 +82,7 @@ class Habit:
         return logs
 
     def save_log_to_file(self, filename):
+        """This method would save the logs of a habit to a text file."""
         if not self.log:
             print(f"No entries to save for {self.name}")
             return
@@ -89,6 +96,7 @@ class Habit:
         print(f"Log for '{self.name}' saved to '{filename}'")
 
     def get_logs_as_dataframe(self):
+        """This method converts the log in to a dataframe so that it can be used to plot graphs"""
         if not self.log:
             return pd.DataFrame(columns=["Date", "Entries"])
 
@@ -105,6 +113,9 @@ class Habit:
         return df
 
     def calculate_streak(self):
+        """Calculates the streak for daily and weekly tasks. Streak is increased by 1 if the habit is performed daily
+        but for weekly the habit need to be performed only once per week. For example, if a habit is performed on last
+        sunday, performing it this Sunday would increase it by 1 but performing it on any other days won't."""
         if not self.log:
             return 0
 
