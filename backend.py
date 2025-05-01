@@ -130,9 +130,17 @@ class Habit:
                 else:
                     break
         else:
-            for i, date in enumerate(dates):
-                expected_date = today - timedelta(days=7*i)
-                if date == expected_date:
+            # for i, date in enumerate(dates):
+            #     expected_date = today - timedelta(days=7*i)
+            #     if date == expected_date:
+            #         streak += 1
+            #     else:
+            #         break
+            weeks = sorted({entry["timestamp"].isocalendar()[1] for entry in self.log}, reverse=True)
+            this_week = datetime.now().isocalendar()[1]
+            for i, week in enumerate(weeks):
+                expected_week = this_week - i
+                if week == expected_week:
                     streak += 1
                 else:
                     break

@@ -62,6 +62,7 @@ with st.sidebar.form(key="create_habit_form"):
     create_button = st.form_submit_button(label="Create Habit")
     if create_button:
         habits.create_habit(name=habit_name, category=habit_category, frequency=habit_frequency)
+        save_habits(habits)
         st.success(f"Habit '{habit_name}' created")
 
 # Main Area
