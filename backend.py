@@ -1,44 +1,6 @@
-# Creating a Habit instance
-# Create User
-# Create Habits class
-# Create classes for different kinds of habits - Health, Productivity, Learning and Growth, Financial Habits,
-# social and relationship habits, spiritual and mindfulness, create habits
-
 from datetime import datetime, timedelta
 import pandas as pd
 
-
-# class Habit:
-#     habits = [["Run", "Health", "Daily"], ["Study", "Productivity", "Daily"], ["Clean", "Productivity", "Weekly"]]
-#
-#
-# class NewHabit(Habit):
-#     def __init__(self):
-#         super().__init__()
-#         # self.name = name
-#         # self.category = category
-#         # self.frequency = frequency
-#         # self.habit = [name, category, frequency]
-#         # self.habits.append(self.habit)
-#         self.streak = 0
-#
-#     # def create_habit(self):
-#     #     new_habits = [self.name, self.category, self.frequency]
-#     #     self.habits.append(new_habits)
-#
-#     def add_a_new_habit(self, name, category, frequency):
-#         new_habit = [name, category, frequency]
-#         self.habits.append(new_habit)
-#
-#     def complete(self):
-#         self.streak += 1
-#         print(f"Nice you are on a {self.streak} day streak")
-
-# Test
-# kai_habits = NewHabit()
-# kai_habits.add_a_new_habit("Drink Water", "Health", "Daily")
-#
-# print(kai_habits.habits)
 
 class Habit:
     def __init__(self, name, category, frequency):
@@ -131,7 +93,7 @@ class Habit:
                     break
         else:
             # for i, date in enumerate(dates):
-            #     expected_date = today - timedelta(days=7*i)
+            #     expected_date = today - timedelta(weeks=1)
             #     if date == expected_date:
             #         streak += 1
             #     else:
@@ -145,6 +107,36 @@ class Habit:
                 else:
                     break
         return streak
+
+    def calculate_longest_streak(self):
+        if not self.log:
+            return 0
+
+        longest = 1
+        current = 1
+        if self.frequency == "Daily":
+            dates = sorted({entry["timestamp"].date() for entry in self.log}, reverse=True)
+            for i in range(1, len(dates)):
+                if dates[i] == dates[i-1] + timedelta(days=1):
+                    current += 1
+                    longest = max(longest, current)
+                else:
+                    current = 1
+        else:
+            weeks = sorted({(entry["timestamp"].isocalendar()[0], entry["timestamp"].isocalendar()[1])
+                            for entry in self.log}, reverse=True)
+            for i in range(1, len(weeks)):
+                prev_year, prev_week = weeks[i - 1]
+                curr_year, curr_week = weeks[i]
+
+                diff = (curr_year - prev_year) * 52 + (curr_week - prev_week)
+
+                if diff == 1:
+                    current += 1
+                    longest = max(longest, current)
+                else:
+                    current = 1
+        return longest
 
 
 class HabitManager:
@@ -188,39 +180,39 @@ class HabitManager:
 
 
 # Test
-kai_habits2 = HabitManager()
-new_habit = kai_habits2.create_habit(name="Drink Water", category="Health", frequency="Daily")
-
-for habits in kai_habits2.habits:
-    print(habits.name)
-
-kai_habits2.log_habit("Drink Water", "Drank 8 glasses of water")
-kai_habits2.log_habit("Workout", "Exercised for 30 minutes")
-
-print("Habit Stats")
-
-for habit in ["Drink Water", "Workout"]:
-    stats = kai_habits2.analyse_habit(habit)
-    print(f"{habit}: {stats}")
-
-stats = kai_habits2.analyse_habit("Drink Water")
-print("Habit analysis for Drink Water")
-if stats["last_entry"]:
-    print(f"Last Log Time: {stats["last_entry"]["timestamp"]}")
-    print(f"Last Log Note: {stats["last_entry"]["note"]}")
-
-new_habit2 = kai_habits2.create_habit(
-    name="Practice Piano",
-    category="Growth",
-    frequency="Daily"
-)
-
-kai_habits2.log_habit("Practice Piano", "Practiced 'Sadness and Sorrow'")
-kai_habits2.log_habit("Practice Piano", "Practiced Heaven Shaking")
-kai_habits2.log_habit("Practice Piano", "Practiced Star Walking")
-
-for habits in kai_habits2.habits:
-    habits.show_log()
-
-for habits in kai_habits2.habits:
-    habits.save_log_to_file(f"{habits.name}.txt")
+# kai_habits2 = HabitManager()
+# new_habit = kai_habits2.create_habit(name="Drink Water", category="Health", frequency="Daily")
+#
+# for habits in kai_habits2.habits:
+#     print(habits.name)
+#
+# kai_habits2.log_habit("Drink Water", "Drank 8 glasses of water")
+# kai_habits2.log_habit("Workout", "Exercised for 30 minutes")
+#
+# print("Habit Stats")
+#
+# for habit in ["Drink Water", "Workout"]:
+#     stats = kai_habits2.analyse_habit(habit)
+#     print(f"{habit}: {stats}")
+#
+# stats = kai_habits2.analyse_habit("Drink Water")
+# print("Habit analysis for Drink Water")
+# if stats["last_entry"]:
+#     print(f"Last Log Time: {stats["last_entry"]["timestamp"]}")
+#     print(f"Last Log Note: {stats["last_entry"]["note"]}")
+#
+# new_habit2 = kai_habits2.create_habit(
+#     name="Practice Piano",
+#     category="Growth",
+#     frequency="Daily"
+# )
+#
+# kai_habits2.log_habit("Practice Piano", "Practiced 'Sadness and Sorrow'")
+# kai_habits2.log_habit("Practice Piano", "Practiced Heaven Shaking")
+# kai_habits2.log_habit("Practice Piano", "Practiced Star Walking")
+#
+# for habits in kai_habits2.habits:
+#     habits.show_log()
+#
+# for habits in kai_habits2.habits:
+#     habits.save_log_to_file(f"{habits.name}.txt")

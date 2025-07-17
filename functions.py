@@ -2,7 +2,6 @@ import os
 from fpdf import FPDF
 from datetime import datetime
 import json
-
 from backend import HabitManager, Habit
 
 

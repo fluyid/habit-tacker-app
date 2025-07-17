@@ -1,10 +1,5 @@
 import base64
-
 import streamlit as st
-from backend import HabitManager, Habit
-import json
-import os
-from datetime import datetime
 from functions import generate_habit_pdf, save_habits, load_habits
 
 st.title("Habit Tracker App")
@@ -29,54 +24,6 @@ with st.sidebar.form(key="create_habit_form"):
 
 # Main Area
 st.header("Manage Your Habits")
-
-# habit_list = habits.get_habit_names()
-# if habit_list:
-#     selected_habit_names = st.selectbox(label="Select a Habit", options=habit_list)
-#     selected_habit = habits.get_habit_by_name(selected_habit_names)
-#
-#     st.subheader(f"Habit: {selected_habit.name}")
-#     st.write(f"**Category:** {selected_habit.category}")
-#     st.write(f"**Total Entries:** {selected_habit.get_stats()['total_entries']}")
-#
-#     # Log Progress
-#     with st.form(key="log_form"):
-#         note = st.text_area(label="Log your progress")
-#         log_button = st.form_submit_button(label="Add Log Entry")
-#         if log_button:
-#             selected_habit.log_progress(note)
-#             save_habits(habits)
-#             st.success("Log entry added!")
-#
-#     # View Habit Log
-#     st.subheader("Habit Log Timeline")
-#     logs = selected_habit.show_log()
-#     print("----Testing Logs")
-#     print(f"Selected Habit: {selected_habit.name}")
-#     print(logs)
-#     st.text_area("Timeline", logs, height=300)
-#
-#     # Habit Progress Chart
-#     st.subheader("Habit Progress Chart")
-#     df = selected_habit.get_logs_as_dataframe()
-#     if df.empty:
-#         st.info("No progress entries yet to show on the chart")
-#     else:
-#         # Line chart for consistency over time
-#         st.line_chart(data=df.set_index("Date"))
-#         # Bar chart for how active I am on different days
-#         st.bar_chart(data=df.set_index("Date"))
-#
-#     # Habit Streak
-#     st.subheader("Habit Streak")
-#
-#     streak_count = selected_habit.calculate_streak()
-#     if streak_count > 0:
-#         st.success(f"You have a {streak_count}🔥 day streak going!")
-#     else:
-#         st.info("You currently don't have a streak :/ Let's start today!")
-# else:
-#     st.info("No habits yet. Create a new one from the sidebar!")
 
 if habits.habits:
     for habit in habits.habits:
@@ -107,6 +54,10 @@ if habits.habits:
                 st.line_chart(df.set_index("Date"))
             else:
                 st.info("No logs yet")
+
+            # Longest Streak
+            longest_streak = habit.calculate_longest_streak()
+            st.metric(label="Longest Streak", value=f"{longest_streak} {habit.frequency.lower()} entries")
 
             # Download PDF report
             pdf_data = generate_habit_pdf(habit)
