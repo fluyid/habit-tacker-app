@@ -1,0 +1,50 @@
+[
+    {
+        "name": "Workout",
+        "category": "Health",
+        "frequency": "Daily",
+        "log": [
+            {
+                "timestamp": "2025-04-30T15:34:25.588973",
+                "note": "Ran 5 kms"
+            }
+        ]
+    },
+    {
+        "name": "Read a book",
+        "category": "Growth",
+        "frequency": "Daily",
+        "log": []
+    },
+    {
+        "name": "Clean the house",
+        "category": "Productivity",
+        "frequency": "Weekly",
+        "log": [
+            {
+                "timestamp": "2025-04-23T14:12:20.532115",
+                "note": "Vacuumed the house"
+            },
+            {
+                "timestamp": "2025-04-30T14:19:33.033945",
+                "note": "Painted the house"
+            },
+            {
+                "timestamp": "2025-04-30T14:28:59.985910",
+                "note": "Vacuumed the house"
+            }
+        ]
+    },
+    {
+        "name": "Meditate",
+        "category": "Health",
+        "frequency": "Daily",
+        "log": []
+    },
+    {
+        "name": "Grocery Shopping",
+        "category": "Productivity",
+        "frequency": "Weekly",
+        "log": []
+    }
+]

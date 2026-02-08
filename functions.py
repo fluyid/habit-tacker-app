@@ -1,11 +1,12 @@
 import os
-from fpdf import FPDF
 from datetime import datetime
 import json
 from backend import HabitManager, Habit
 
 
 def generate_habit_pdf(habit):
+    from fpdf import FPDF
+
     pdf = FPDF()
     pdf.add_page()
     pdf.add_font(family="DejaVu", style="", fname="DejaVuSans.ttf", uni=True)

@@ -1,8 +1,17 @@
 import base64
+import os
 import streamlit as st
 from functions import generate_habit_pdf, save_habits, load_habits
 
 st.title("Habit Tracker App")
+
+app_password = os.getenv("HABIT_APP_PASSWORD")
+if app_password:
+    st.sidebar.header("Authentication")
+    password_input = st.sidebar.text_input("Password", type="password")
+    if password_input != app_password:
+        st.warning("Enter the correct password in the sidebar to use the app.")
+        st.stop()
 
 # Initialising the HabitManager
 if "habits" not in st.session_state:
@@ -13,17 +22,31 @@ habits = st.session_state.habits
 # Sidebar
 st.sidebar.header("Create a new Habit")
 with st.sidebar.form(key="create_habit_form"):
-    habit_name = st.text_input(label="Habit Name", placeholder="Clean the house")
+    habit_name = st.text_input(label="Habit Name", placeholder="Clean the house (required)")
     habit_category = st.radio(label="Category", options=("Health", "Productivity", "Personal Growth"))
     habit_frequency = st.radio(label="Frequency", options=("Daily", "Weekly"))
     create_button = st.form_submit_button(label="Create Habit")
     if create_button:
-        habits.create_habit(name=habit_name, category=habit_category, frequency=habit_frequency)
-        save_habits(habits)
-        st.success(f"Habit '{habit_name}' created")
+        name = habit_name.strip()
+        if not name:
+            st.error("Habit name is required.")
+        elif habits.get_habit_by_name(name):
+            st.error(f"Habit '{name}' already exists.")
+        else:
+            habits.create_habit(name=name, category=habit_category, frequency=habit_frequency)
+            save_habits(habits)
+            st.success(f"Habit '{name}' created")
 
 # Main Area
 st.header("Manage Your Habits")
+st.subheader("Portfolio Extensions")
+periodicity_choice = st.selectbox("Filter habits by periodicity", options=("Daily", "Weekly"))
+matching_habits = habits.get_habits_by_periodicity(periodicity_choice)
+if matching_habits:
+    st.caption(f"{periodicity_choice} habits: {', '.join(habit.name for habit in matching_habits)}")
+else:
+    st.caption(f"No {periodicity_choice.lower()} habits found.")
+st.metric(label="Longest Run Streak Across All Habits", value=habits.get_longest_run_streak())
 
 if habits.habits:
     for habit in habits.habits:
