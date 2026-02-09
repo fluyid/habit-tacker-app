@@ -12,9 +12,9 @@ class FunctionTests(unittest.TestCase):
         manager = HabitManager()
         manager.habits = []
 
-        habit = Habit("Workout", "Health", "Daily")
+        habit = Habit("Workout", "Health", "Daily", "km")
         timestamp = datetime(2025, 1, 1, 8, 30)
-        habit.log.append({"timestamp": timestamp, "note": "Ran 5km"})
+        habit.log.append({"timestamp": timestamp, "value": 5.0, "unit": "km", "note": "Morning run"})
         manager.habits.append(habit)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -28,12 +28,31 @@ class FunctionTests(unittest.TestCase):
         self.assertEqual(loaded_habit.name, "Workout")
         self.assertEqual(loaded_habit.category, "Health")
         self.assertEqual(loaded_habit.frequency, "Daily")
-        self.assertEqual(loaded_habit.log[0]["note"], "Ran 5km")
+        self.assertEqual(loaded_habit.unit, "km")
+        self.assertEqual(loaded_habit.log[0]["note"], "Morning run")
+        self.assertEqual(loaded_habit.log[0]["value"], 5.0)
         self.assertEqual(loaded_habit.log[0]["timestamp"], timestamp)
 
+    def test_backward_compatibility_for_old_log_format(self):
+        manager = HabitManager()
+        manager.habits = []
+
+        habit = Habit("Meditate", "Health", "Daily", "minutes")
+        timestamp = datetime(2025, 1, 1, 8, 30)
+        habit.log.append({"timestamp": timestamp, "note": "legacy"})
+        manager.habits.append(habit)
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            target = Path(tmp_dir) / "habits.json"
+            save_habits(manager, str(target))
+            loaded = load_habits(str(target))
+
+        self.assertEqual(loaded.habits[0].log[0]["value"], 0.0)
+        self.assertEqual(loaded.habits[0].log[0]["unit"], "minutes")
+
     def test_generate_habit_pdf_returns_data(self):
-        habit = Habit("Workout", "Health", "Daily")
-        habit.log_progress("Ran 5km")
+        habit = Habit("Workout", "Health", "Daily", "km")
+        habit.log_progress(5, "Evening run")
 
         try:
             pdf_data = generate_habit_pdf(habit)

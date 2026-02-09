@@ -1,9 +1,14 @@
+"""Streamlit UI for creating, editing, and tracking habits with units."""
+
 import base64
 import os
 import streamlit as st
 from functions import generate_habit_pdf, save_habits, load_habits
 
 st.title("Habit Tracker App")
+UNIT_OPTIONS = ("km", "minutes", "count", "reps", "ml", "pages", "other")
+CATEGORY_OPTIONS = ("Health", "Productivity", "Personal Growth", "Growth")
+FREQUENCY_OPTIONS = ("Daily", "Weekly")
 
 app_password = os.getenv("HABIT_APP_PASSWORD")
 if app_password:
@@ -23,19 +28,26 @@ habits = st.session_state.habits
 st.sidebar.header("Create a new Habit")
 with st.sidebar.form(key="create_habit_form"):
     habit_name = st.text_input(label="Habit Name", placeholder="Clean the house (required)")
-    habit_category = st.radio(label="Category", options=("Health", "Productivity", "Personal Growth"))
-    habit_frequency = st.radio(label="Frequency", options=("Daily", "Weekly"))
+    habit_category = st.radio(label="Category", options=CATEGORY_OPTIONS)
+    habit_frequency = st.radio(label="Frequency", options=FREQUENCY_OPTIONS)
+    habit_unit_choice = st.selectbox("Unit", options=UNIT_OPTIONS)
+    habit_custom_unit = ""
+    if habit_unit_choice == "other":
+        habit_custom_unit = st.text_input(label="Custom Unit", placeholder="e.g. laps")
     create_button = st.form_submit_button(label="Create Habit")
     if create_button:
         name = habit_name.strip()
+        unit = habit_custom_unit.strip() if habit_unit_choice == "other" else habit_unit_choice
         if not name:
             st.error("Habit name is required.")
+        elif not unit:
+            st.error("Please choose or enter a valid unit.")
         elif habits.get_habit_by_name(name):
             st.error(f"Habit '{name}' already exists.")
         else:
-            habits.create_habit(name=name, category=habit_category, frequency=habit_frequency)
+            habits.create_habit(name=name, category=habit_category, frequency=habit_frequency, unit=unit)
             save_habits(habits)
-            st.success(f"Habit '{name}' created")
+            st.success(f"Habit '{name}' created with unit '{unit}'")
 
 # Main Area
 st.header("Manage Your Habits")
@@ -49,26 +61,101 @@ else:
 st.metric(label="Longest Run Streak Across All Habits", value=habits.get_longest_run_streak())
 
 if habits.habits:
-    for habit in habits.habits:
+    for idx, habit in enumerate(habits.habits):
         with st.expander(f"🔷 {habit.name}"):
             # Habit Info
             st.write(f"**Category:** {habit.category}")
             st.write(f"**Frequency:** {habit.frequency.capitalize()}")
+            st.write(f"**Unit:** {habit.unit}")
             stats = habit.get_stats()
             streak = habit.calculate_streak()
 
+            edit_state_key = f"show_edit_{idx}"
+            if edit_state_key not in st.session_state:
+                st.session_state[edit_state_key] = False
+
+            if st.button("Edit Habit", key=f"toggle_edit_{idx}"):
+                st.session_state[edit_state_key] = not st.session_state[edit_state_key]
+
+            if st.session_state[edit_state_key]:
+                current_category = habit.category if habit.category in CATEGORY_OPTIONS else CATEGORY_OPTIONS[0]
+                current_frequency = habit.frequency if habit.frequency in FREQUENCY_OPTIONS else FREQUENCY_OPTIONS[0]
+                current_unit = habit.unit.strip()
+                default_unit_choice = current_unit if current_unit in UNIT_OPTIONS[:-1] else "other"
+
+                with st.form(key=f"edit_form_{idx}"):
+                    edit_name = st.text_input("Habit Name", value=habit.name, key=f"edit_name_{idx}")
+                    edit_category = st.selectbox(
+                        "Category",
+                        options=CATEGORY_OPTIONS,
+                        index=CATEGORY_OPTIONS.index(current_category),
+                        key=f"edit_category_{idx}"
+                    )
+                    edit_frequency = st.selectbox(
+                        "Frequency",
+                        options=FREQUENCY_OPTIONS,
+                        index=FREQUENCY_OPTIONS.index(current_frequency),
+                        key=f"edit_frequency_{idx}"
+                    )
+                    edit_unit_choice = st.selectbox(
+                        "Unit",
+                        options=UNIT_OPTIONS,
+                        index=UNIT_OPTIONS.index(default_unit_choice),
+                        key=f"edit_unit_choice_{idx}"
+                    )
+                    edit_custom_unit = ""
+                    if edit_unit_choice == "other":
+                        edit_custom_unit = st.text_input(
+                            "Custom Unit",
+                            value=current_unit if default_unit_choice == "other" else "",
+                            key=f"edit_custom_unit_{idx}"
+                        )
+
+                    save_edit = st.form_submit_button("Save Habit Changes")
+                    cancel_edit = st.form_submit_button("Cancel")
+
+                    if save_edit:
+                        updated_unit = edit_custom_unit.strip() if edit_unit_choice == "other" else edit_unit_choice
+                        ok, message = habits.update_habit(
+                            current_name=habit.name,
+                            new_name=edit_name,
+                            category=edit_category,
+                            frequency=edit_frequency,
+                            unit=updated_unit
+                        )
+                        if ok:
+                            save_habits(habits)
+                            st.session_state[edit_state_key] = False
+                            st.success(message)
+                            st.rerun()
+                        else:
+                            st.error(message)
+
+                    if cancel_edit:
+                        st.session_state[edit_state_key] = False
+                        st.rerun()
+
             # Log Form
             with st.form(key=f"log_form_{habit.name}"):
-                log_note = st.text_input("Log your progress: ", key=f"note_{habit.name}").strip()
+                log_value = st.number_input(
+                    f"Enter progress ({habit.unit})",
+                    min_value=0.0,
+                    step=1.0,
+                    key=f"value_{habit.name}"
+                )
+                log_note = st.text_input("Optional note", key=f"note_{habit.name}").strip()
                 submit_button = st.form_submit_button("Log Progress")
-                if submit_button and log_note:
-                    habit.log_progress(log_note)
+                if submit_button and log_value > 0:
+                    habit.log_progress(log_value, log_note)
                     save_habits(habits)
-                    st.success("Progress logged successfully!")
+                    st.success(f"Logged {log_value} {habit.unit} successfully!")
                     st.rerun()
+                if submit_button and log_value <= 0:
+                    st.error("Progress value must be greater than 0.")
 
             # Key stats
             st.metric(label="Total Logs", value=stats["total_entries"])
+            st.metric(label=f"Total {habit.unit}", value=habit.get_total_value())
             st.metric(label="Current Streak", value=f"{streak} days")
 
             # Mini progress graph

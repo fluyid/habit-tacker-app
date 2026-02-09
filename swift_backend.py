@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+"""Tiny JSON API layer so a Swift app can talk to the habit data."""
+
 import json
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -10,19 +12,24 @@ DATA_FILE = "habits.json"
 
 
 def habit_to_dict(habit):
+    """Convert a Habit object into clean JSON-ready data."""
     return {
         "name": habit.name,
         "category": habit.category,
         "frequency": habit.frequency,
+        "unit": habit.unit,
         "log": [
             {
                 "timestamp": entry["timestamp"].isoformat(),
-                "note": entry["note"],
+                "value": float(entry.get("value", 0.0)),
+                "unit": entry.get("unit", habit.unit),
+                "note": entry.get("note", ""),
             }
             for entry in habit.log
         ],
         "stats": {
             "total_entries": habit.get_stats()["total_entries"],
+            "total_value": habit.get_total_value(),
             "current_streak": habit.calculate_streak(),
             "longest_streak": habit.calculate_longest_streak(),
         },
@@ -30,7 +37,10 @@ def habit_to_dict(habit):
 
 
 class HabitAPIHandler(BaseHTTPRequestHandler):
+    """HTTP handler with basic GET/POST endpoints for habits."""
+
     def _read_json(self):
+        """Read request JSON safely and return an empty dict if no body."""
         length = int(self.headers.get("Content-Length", 0))
         if length == 0:
             return {}
@@ -38,6 +48,7 @@ class HabitAPIHandler(BaseHTTPRequestHandler):
         return json.loads(raw.decode("utf-8"))
 
     def _write_json(self, payload, status=HTTPStatus.OK):
+        """Send a JSON response with the given status code."""
         body = json.dumps(payload).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
@@ -46,12 +57,15 @@ class HabitAPIHandler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def _load_manager(self):
+        """Load fresh habit data from disk for each request."""
         return load_habits(DATA_FILE)
 
     def log_message(self, fmt, *args):
+        """Silence default request logging to keep terminal output clean."""
         return
 
     def do_GET(self):
+        """Handle read-only routes like health, habits list, and stats."""
         manager = self._load_manager()
         parsed = urlparse(self.path)
         path = parsed.path
@@ -86,6 +100,7 @@ class HabitAPIHandler(BaseHTTPRequestHandler):
         self._write_json({"error": "Route not found"}, status=HTTPStatus.NOT_FOUND)
 
     def do_POST(self):
+        """Handle create routes for habits and new log entries."""
         manager = self._load_manager()
         parsed = urlparse(self.path)
         path = parsed.path
@@ -100,10 +115,11 @@ class HabitAPIHandler(BaseHTTPRequestHandler):
             name = str(payload.get("name", "")).strip()
             category = str(payload.get("category", "")).strip()
             frequency = str(payload.get("frequency", "")).strip().title()
+            unit = str(payload.get("unit", "count")).strip()
 
-            if not name or not category or frequency not in {"Daily", "Weekly"}:
+            if not name or not category or not unit or frequency not in {"Daily", "Weekly"}:
                 self._write_json(
-                    {"error": "name, category, and frequency (Daily/Weekly) are required"},
+                    {"error": "name, category, unit, and frequency (Daily/Weekly) are required"},
                     status=HTTPStatus.BAD_REQUEST,
                 )
                 return
@@ -112,7 +128,7 @@ class HabitAPIHandler(BaseHTTPRequestHandler):
                 self._write_json({"error": "Habit already exists"}, status=HTTPStatus.CONFLICT)
                 return
 
-            habit = manager.create_habit(name, category, frequency)
+            habit = manager.create_habit(name, category, frequency, unit)
             save_habits(manager, DATA_FILE)
             self._write_json({"habit": habit_to_dict(habit)}, status=HTTPStatus.CREATED)
             return
@@ -131,12 +147,18 @@ class HabitAPIHandler(BaseHTTPRequestHandler):
                 self._write_json({"error": "Invalid JSON"}, status=HTTPStatus.BAD_REQUEST)
                 return
 
-            note = str(payload.get("note", "")).strip()
-            if not note:
-                self._write_json({"error": "note is required"}, status=HTTPStatus.BAD_REQUEST)
+            try:
+                value = float(payload.get("value", 0))
+            except (TypeError, ValueError):
+                self._write_json({"error": "value must be a number"}, status=HTTPStatus.BAD_REQUEST)
                 return
 
-            habit.log_progress(note)
+            if value <= 0:
+                self._write_json({"error": "value must be greater than 0"}, status=HTTPStatus.BAD_REQUEST)
+                return
+
+            note = str(payload.get("note", "")).strip()
+            habit.log_progress(value, note)
             save_habits(manager, DATA_FILE)
             self._write_json({"habit": habit_to_dict(habit)}, status=HTTPStatus.CREATED)
             return
@@ -145,6 +167,7 @@ class HabitAPIHandler(BaseHTTPRequestHandler):
 
 
 def run(host="127.0.0.1", port=8080):
+    """Start the API server and keep it running."""
     server = ThreadingHTTPServer((host, port), HabitAPIHandler)
     print(f"Habit API listening at http://{host}:{port}")
     server.serve_forever()

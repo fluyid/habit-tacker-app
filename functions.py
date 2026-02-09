@@ -5,6 +5,7 @@ from backend import HabitManager, Habit
 
 
 def generate_habit_pdf(habit):
+    """Build a simple PDF report for one habit and return it as bytes."""
     from fpdf import FPDF
 
     pdf = FPDF()
@@ -19,6 +20,7 @@ def generate_habit_pdf(habit):
     pdf.ln(h=10)
     pdf.cell(w=200, h=10, text=f"Category: {habit.category}", ln=True)
     pdf.cell(w=200, h=10, text=f"Frequency: {habit.frequency}", ln=True)
+    pdf.cell(w=200, h=10, text=f"Unit: {habit.unit}", ln=True)
 
     # Stats
     stats = habit.get_stats()
@@ -26,6 +28,7 @@ def generate_habit_pdf(habit):
 
     pdf.ln(h=10)
     pdf.cell(w=200, h=10, text=f"Total Logs: {stats['total_entries']}", ln=True)
+    pdf.cell(w=200, h=10, text=f"Total {habit.unit}: {habit.get_total_value()}", ln=True)
     pdf.cell(w=200, h=10, text=f"Current Streak: {streak} days", ln=True)
 
     # Log Timeline
@@ -36,8 +39,11 @@ def generate_habit_pdf(habit):
     if habit.log:
         for index, entry in enumerate(habit.log, 1):
             timestamp = entry["timestamp"].strftime("%d/%m/%Y %H:%M")
-            note = entry["note"]
-            line = f"{index}. [{timestamp}] - {note}"
+            value = entry.get("value", 0.0)
+            unit = entry.get("unit", habit.unit)
+            note = entry.get("note", "")
+            note_part = f" ({note})" if note else ""
+            line = f"{index}. [{timestamp}] - {value} {unit}{note_part}"
             pdf.multi_cell(w=0, h=10, text=line)
             pdf.ln(1)
     else:
@@ -45,24 +51,30 @@ def generate_habit_pdf(habit):
     return pdf.output(dest="S")
 
 
-# Saving to a json file
 def save_habits(habits, filename="habits.json"):
+    """Save all habits to JSON so the app can pick up where you left off."""
     habits_data = []
     for habit in habits.habits:
         habits_data.append({
             "name": habit.name,
             "category": habit.category,
             "frequency": habit.frequency,
+            "unit": habit.unit,
             "log": [
-                {"timestamp": entry["timestamp"].isoformat(), "note": entry["note"]} for entry in habit.log
+                {
+                    "timestamp": entry["timestamp"].isoformat(),
+                    "value": float(entry.get("value", 0.0)),
+                    "unit": entry.get("unit", habit.unit),
+                    "note": entry.get("note", "")
+                } for entry in habit.log
             ]
         })
     with open(filename, "w", encoding="utf-8") as file:
         json.dump(obj=habits_data, fp=file, indent=4)
 
 
-# Loading the habits from a json file
 def load_habits(filename="habits.json"):
+    """Load habits from JSON. Older log formats are upgraded on the fly."""
     habits = HabitManager()
     if os.path.exists(filename):
         with open(filename, "r", encoding="utf-8") as file:
@@ -72,12 +84,16 @@ def load_habits(filename="habits.json"):
                 habit = Habit(
                     name=habit_data["name"],
                     category=habit_data["category"],
-                    frequency=habit_data["frequency"]
+                    frequency=habit_data["frequency"],
+                    unit=habit_data.get("unit", "count")
                 )
                 habit.log = [
                     {
                         "timestamp": datetime.fromisoformat(entry["timestamp"]),
-                        "note": entry["note"]
+                        # Backward compatibility for old logs that only stored notes.
+                        "value": float(entry.get("value", 1.0)),
+                        "unit": entry.get("unit", habit.unit),
+                        "note": entry.get("note", "")
                     } for entry in habit_data["log"]
                 ]
                 habits.habits.append(habit)

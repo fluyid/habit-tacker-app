@@ -3,48 +3,46 @@ import pandas as pd
 
 
 class Habit:
-    def __init__(self, name, category, frequency):
+    """One habit plus all the logs and streak logic around it."""
+
+    def __init__(self, name, category, frequency, unit="count"):
         self.name = name
         self.category = category
         self.frequency = frequency
+        self.unit = unit
         self.log = []
 
-    def log_progress(self, note):
-        """This method logs the progress. The note must be added by the user. However, the time would automatically
-        be added. The data added here will be used for displaying the log, analysing the data and even generating
-        the pdf"""
+    def log_progress(self, value, note=""):
+        """Add one progress entry with a number and an optional note."""
         entry = {
             "timestamp": datetime.now(),
+            "value": float(value),
+            "unit": self.unit,
             "note": note
         }
         self.log.append(entry)
 
     def get_stats(self):
-        """This method would return the total number of entries as well as when was the last entry"""
+        """Quick summary: how many logs we have and the latest one."""
         return {
             "total_entries": len(self.log),
             "last_entry": self.log[-1] if self.log else None
         }
 
     def show_log(self):
-        """This method would return the logs of the selected habit. It would return an index number, date and time
-        of the habit as well as the note that was added to it in log_progress(if any note was added)"""
+        """Return the full log as readable text so it can be printed fast."""
         if not self.log:
-            # print(f"No entries for habit '{self.name}'")
             return "No entries yet"
 
-        # print(f"\n----Log for '{self.name}'-----")
-        # for index, entry in enumerate(self.log, 1):
-        #     time_str = entry["timestamp"].strftime("%d/%m/%Y %H:%M")
-        #     print(f"{index}. [{time_str}] - {entry["note"]}")
         logs = ""
         for index, entry in enumerate(self.log, 1):
             time_str = entry["timestamp"].strftime("%d/%m/%Y %H:%M")
-            logs += f"{index}. [{time_str}] - {entry['note']}\n"
+            note_part = f" ({entry['note']})" if entry.get("note") else ""
+            logs += f"{index}. [{time_str}] - {entry['value']} {entry.get('unit', self.unit)}{note_part}\n"
         return logs
 
     def save_log_to_file(self, filename):
-        """This method would save the logs of a habit to a text file."""
+        """Dump the log into a text file if you want an offline copy."""
         if not self.log:
             print(f"No entries to save for {self.name}")
             return
@@ -53,31 +51,32 @@ class Habit:
             file.write(f"---Habit Log: {self.name}---\n\n")
             for index, entry in enumerate(self.log, 1):
                 time_str = entry["timestamp"].strftime("%d/%m/%Y %H:%M")
-                file.write(f"{index}. [{time_str}] - {entry["note"]}\n")
+                note_part = f" ({entry['note']})" if entry.get("note") else ""
+                file.write(f"{index}. [{time_str}] - {entry['value']} {entry.get('unit', self.unit)}{note_part}\n")
 
         print(f"Log for '{self.name}' saved to '{filename}'")
 
     def get_logs_as_dataframe(self):
-        """This method converts the log in to a dataframe so that it can be used to plot graphs"""
+        """Group logs by date and return a DataFrame ready for charts."""
         if not self.log:
-            return pd.DataFrame(columns=["Date", "Entries"])
+            return pd.DataFrame(columns=["Date", "Value"])
 
-        dates = [entry["timestamp"].date() for entry in self.log]
-        date_counts = pd.Series(dates).value_counts().sort_index()
-        # print(date_counts)
-        # print(date_counts.index)
-        # print(date_counts.values)
+        daily_totals = {}
+        for entry in self.log:
+            day = entry["timestamp"].date()
+            daily_totals[day] = daily_totals.get(day, 0.0) + float(entry.get("value", 0.0))
 
-        df = pd.DataFrame({
-            "Date": date_counts.index,
-            "Entries": date_counts.values
+        return pd.DataFrame({
+            "Date": sorted(daily_totals.keys()),
+            "Value": [daily_totals[day] for day in sorted(daily_totals.keys())]
         })
-        return df
+
+    def get_total_value(self):
+        """Total progress value across all entries for this habit."""
+        return sum(float(entry.get("value", 0.0)) for entry in self.log)
 
     def calculate_streak(self):
-        """Calculates the streak for daily and weekly tasks. Streak is increased by 1 if the habit is performed daily
-        but for weekly the habit need to be performed only once per week. For example, if a habit is performed on last
-        sunday, performing it this Sunday would increase it by 1 but performing it on any other days won't."""
+        """Current streak from today backwards (daily or weekly)."""
         if not self.log:
             return 0
 
@@ -109,6 +108,7 @@ class Habit:
         return streak
 
     def calculate_longest_streak(self):
+        """Best streak ever recorded for this habit."""
         if not self.log:
             return 0
 
@@ -137,90 +137,87 @@ class Habit:
 
 
 class HabitManager:
+    """Simple in-memory manager for creating, editing, and searching habits."""
+
     def __init__(self):
         self.habits = []
         self.predefined_habits = [
-            Habit("Workout", "Health", "Daily"),
-            Habit("Read a book", "Growth", "Daily"),
-            Habit("Clean the house", "Productivity", "Weekly"),
-            Habit("Meditate", "Health", "Daily"),
-            Habit("Grocery Shopping", "Productivity", "Weekly")
+            Habit("Workout", "Health", "Daily", "reps"),
+            Habit("Read a book", "Growth", "Daily", "pages"),
+            Habit("Clean the house", "Productivity", "Weekly", "minutes"),
+            Habit("Meditate", "Health", "Daily", "minutes"),
+            Habit("Grocery Shopping", "Productivity", "Weekly", "count")
         ]
         self.habits.extend(self.predefined_habits)
 
-    def create_habit(self, name, category, frequency):
-        new_habit = Habit(name, category, frequency)
+    def create_habit(self, name, category, frequency, unit="count"):
+        """Create a habit and keep it in the active list."""
+        new_habit = Habit(name, category, frequency, unit)
         self.habits.append(new_habit)
         return new_habit
 
-    def log_habit(self, habit_name, entry):
+    def log_habit(self, habit_name, value, note=""):
+        """Log progress for a habit by name. Returns True if it worked."""
         for habit in self.habits:
             if habit.name == habit_name:
-                habit.log_progress(entry)
+                habit.log_progress(value, note)
                 return True
         return False
 
     def analyse_habit(self, habit_name):
+        """Return stats for one habit by name, or None if missing."""
         for habit in self.habits:
             if habit.name == habit_name:
                 return habit.get_stats()
         return None
 
     def get_habit_names(self):
+        """Return all habit names in the current manager."""
         return [habit.name for habit in self.habits]
 
     def get_habit_by_name(self, name):
+        """Find one habit by exact name."""
         for habit in self.habits:
             if habit.name == name:
                 return habit
         return None
 
+    def update_habit(self, current_name, new_name, category, frequency, unit):
+        """Edit a habit in one shot: name, category, frequency, and unit."""
+        habit = self.get_habit_by_name(current_name)
+        if habit is None:
+            return False, "Habit not found."
+
+        normalized_name = new_name.strip()
+        normalized_unit = unit.strip()
+        if not normalized_name:
+            return False, "Habit name is required."
+        if not normalized_unit:
+            return False, "Unit is required."
+        if frequency not in {"Daily", "Weekly"}:
+            return False, "Frequency must be Daily or Weekly."
+
+        existing = self.get_habit_by_name(normalized_name)
+        if existing is not None and existing is not habit:
+            return False, f"Habit '{normalized_name}' already exists."
+
+        habit.name = normalized_name
+        habit.category = category
+        habit.frequency = frequency
+        habit.unit = normalized_unit
+        for entry in habit.log:
+            entry["unit"] = normalized_unit
+        return True, "Habit updated successfully."
+
     def get_habits_by_periodicity(self, frequency):
+        """Get all habits that match the requested frequency."""
         return [
             habit for habit in self.habits
             if habit.frequency.lower() == frequency.lower()
         ]
 
     def get_longest_run_streak(self):
+        """Return the highest longest-streak value across all habits."""
         if not self.habits:
             return 0
         return max(habit.calculate_longest_streak() for habit in self.habits)
-
-
-# Test
-# kai_habits2 = HabitManager()
-# new_habit = kai_habits2.create_habit(name="Drink Water", category="Health", frequency="Daily")
-#
-# for habits in kai_habits2.habits:
-#     print(habits.name)
-#
-# kai_habits2.log_habit("Drink Water", "Drank 8 glasses of water")
-# kai_habits2.log_habit("Workout", "Exercised for 30 minutes")
-#
-# print("Habit Stats")
-#
-# for habit in ["Drink Water", "Workout"]:
-#     stats = kai_habits2.analyse_habit(habit)
-#     print(f"{habit}: {stats}")
-#
-# stats = kai_habits2.analyse_habit("Drink Water")
-# print("Habit analysis for Drink Water")
-# if stats["last_entry"]:
-#     print(f"Last Log Time: {stats["last_entry"]["timestamp"]}")
-#     print(f"Last Log Note: {stats["last_entry"]["note"]}")
-#
-# new_habit2 = kai_habits2.create_habit(
-#     name="Practice Piano",
-#     category="Growth",
-#     frequency="Daily"
-# )
-#
-# kai_habits2.log_habit("Practice Piano", "Practiced 'Sadness and Sorrow'")
-# kai_habits2.log_habit("Practice Piano", "Practiced Heaven Shaking")
-# kai_habits2.log_habit("Practice Piano", "Practiced Star Walking")
-#
-# for habits in kai_habits2.habits:
-#     habits.show_log()
-#
-# for habits in kai_habits2.habits:
-#     habits.save_log_to_file(f"{habits.name}.txt")
