@@ -5,19 +5,32 @@ import pandas as pd
 class Habit:
     """One habit plus all the logs and streak logic around it."""
 
-    def __init__(self, name, category, frequency, unit="count"):
+    def __init__(self, name, category, frequency, unit="count", tracking_type="numeric"):
         self.name = name
         self.category = category
         self.frequency = frequency
         self.unit = unit
+        self.tracking_type = tracking_type
         self.log = []
 
-    def log_progress(self, value, note=""):
-        """Add one progress entry with a number and an optional note."""
+    def log_progress(self, value=None, note="", completed=None):
+        """Add one entry. Numeric habits use value, Yes/No habits use completed."""
+        if self.tracking_type == "boolean":
+            if completed is None:
+                raise ValueError("Boolean habits need a Yes/No completion value.")
+            bool_completed = bool(completed)
+            numeric_value = 1.0 if bool_completed else 0.0
+        else:
+            if value is None:
+                raise ValueError("Numeric habits need a progress value.")
+            numeric_value = float(value)
+            bool_completed = None
+
         entry = {
             "timestamp": datetime.now(),
-            "value": float(value),
+            "value": numeric_value,
             "unit": self.unit,
+            "completed": bool_completed,
             "note": note
         }
         self.log.append(entry)
@@ -38,7 +51,11 @@ class Habit:
         for index, entry in enumerate(self.log, 1):
             time_str = entry["timestamp"].strftime("%d/%m/%Y %H:%M")
             note_part = f" ({entry['note']})" if entry.get("note") else ""
-            logs += f"{index}. [{time_str}] - {entry['value']} {entry.get('unit', self.unit)}{note_part}\n"
+            if self.tracking_type == "boolean":
+                status = "Yes" if entry.get("completed") else "No"
+                logs += f"{index}. [{time_str}] - Completed: {status}{note_part}\n"
+            else:
+                logs += f"{index}. [{time_str}] - {entry['value']} {entry.get('unit', self.unit)}{note_part}\n"
         return logs
 
     def save_log_to_file(self, filename):
@@ -52,7 +69,11 @@ class Habit:
             for index, entry in enumerate(self.log, 1):
                 time_str = entry["timestamp"].strftime("%d/%m/%Y %H:%M")
                 note_part = f" ({entry['note']})" if entry.get("note") else ""
-                file.write(f"{index}. [{time_str}] - {entry['value']} {entry.get('unit', self.unit)}{note_part}\n")
+                if self.tracking_type == "boolean":
+                    status = "Yes" if entry.get("completed") else "No"
+                    file.write(f"{index}. [{time_str}] - Completed: {status}{note_part}\n")
+                else:
+                    file.write(f"{index}. [{time_str}] - {entry['value']} {entry.get('unit', self.unit)}{note_part}\n")
 
         print(f"Log for '{self.name}' saved to '{filename}'")
 
@@ -74,6 +95,12 @@ class Habit:
     def get_total_value(self):
         """Total progress value across all entries for this habit."""
         return sum(float(entry.get("value", 0.0)) for entry in self.log)
+
+    def get_completion_counts(self):
+        """For Yes/No habits, return total yes and no entries."""
+        yes_count = sum(1 for entry in self.log if entry.get("completed") is True)
+        no_count = sum(1 for entry in self.log if entry.get("completed") is False)
+        return {"yes": yes_count, "no": no_count}
 
     def calculate_streak(self):
         """Current streak from today backwards (daily or weekly)."""
@@ -142,25 +169,25 @@ class HabitManager:
     def __init__(self):
         self.habits = []
         self.predefined_habits = [
-            Habit("Workout", "Health", "Daily", "reps"),
-            Habit("Read a book", "Growth", "Daily", "pages"),
-            Habit("Clean the house", "Productivity", "Weekly", "minutes"),
-            Habit("Meditate", "Health", "Daily", "minutes"),
-            Habit("Grocery Shopping", "Productivity", "Weekly", "count")
+            Habit("Workout", "Health", "Daily", "reps", "numeric"),
+            Habit("Read a book", "Growth", "Daily", "pages", "numeric"),
+            Habit("Clean the house", "Productivity", "Weekly", "completion", "boolean"),
+            Habit("Meditate", "Health", "Daily", "minutes", "numeric"),
+            Habit("Grocery Shopping", "Productivity", "Weekly", "completion", "boolean")
         ]
         self.habits.extend(self.predefined_habits)
 
-    def create_habit(self, name, category, frequency, unit="count"):
+    def create_habit(self, name, category, frequency, unit="count", tracking_type="numeric"):
         """Create a habit and keep it in the active list."""
-        new_habit = Habit(name, category, frequency, unit)
+        new_habit = Habit(name, category, frequency, unit, tracking_type)
         self.habits.append(new_habit)
         return new_habit
 
-    def log_habit(self, habit_name, value, note=""):
+    def log_habit(self, habit_name, value=None, note="", completed=None):
         """Log progress for a habit by name. Returns True if it worked."""
         for habit in self.habits:
             if habit.name == habit_name:
-                habit.log_progress(value, note)
+                habit.log_progress(value=value, note=note, completed=completed)
                 return True
         return False
 
@@ -182,8 +209,8 @@ class HabitManager:
                 return habit
         return None
 
-    def update_habit(self, current_name, new_name, category, frequency, unit):
-        """Edit a habit in one shot: name, category, frequency, and unit."""
+    def update_habit(self, current_name, new_name, category, frequency, unit, tracking_type):
+        """Edit a habit in one shot: name, category, frequency, unit, and type."""
         habit = self.get_habit_by_name(current_name)
         if habit is None:
             return False, "Habit not found."
@@ -196,6 +223,8 @@ class HabitManager:
             return False, "Unit is required."
         if frequency not in {"Daily", "Weekly"}:
             return False, "Frequency must be Daily or Weekly."
+        if tracking_type not in {"numeric", "boolean"}:
+            return False, "Tracking type must be numeric or boolean."
 
         existing = self.get_habit_by_name(normalized_name)
         if existing is not None and existing is not habit:
@@ -205,8 +234,17 @@ class HabitManager:
         habit.category = category
         habit.frequency = frequency
         habit.unit = normalized_unit
+        habit.tracking_type = tracking_type
         for entry in habit.log:
             entry["unit"] = normalized_unit
+            if tracking_type == "boolean":
+                completed_value = entry.get("completed")
+                if completed_value is None:
+                    completed_value = float(entry.get("value", 0.0)) > 0
+                entry["completed"] = bool(completed_value)
+                entry["value"] = 1.0 if entry["completed"] else 0.0
+            else:
+                entry["completed"] = None
         return True, "Habit updated successfully."
 
     def get_habits_by_periodicity(self, frequency):

@@ -12,9 +12,9 @@ class FunctionTests(unittest.TestCase):
         manager = HabitManager()
         manager.habits = []
 
-        habit = Habit("Workout", "Health", "Daily", "km")
+        habit = Habit("Workout", "Health", "Daily", "km", "numeric")
         timestamp = datetime(2025, 1, 1, 8, 30)
-        habit.log.append({"timestamp": timestamp, "value": 5.0, "unit": "km", "note": "Morning run"})
+        habit.log.append({"timestamp": timestamp, "value": 5.0, "completed": None, "unit": "km", "note": "Morning run"})
         manager.habits.append(habit)
 
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -28,6 +28,7 @@ class FunctionTests(unittest.TestCase):
         self.assertEqual(loaded_habit.name, "Workout")
         self.assertEqual(loaded_habit.category, "Health")
         self.assertEqual(loaded_habit.frequency, "Daily")
+        self.assertEqual(loaded_habit.tracking_type, "numeric")
         self.assertEqual(loaded_habit.unit, "km")
         self.assertEqual(loaded_habit.log[0]["note"], "Morning run")
         self.assertEqual(loaded_habit.log[0]["value"], 5.0)
@@ -37,7 +38,7 @@ class FunctionTests(unittest.TestCase):
         manager = HabitManager()
         manager.habits = []
 
-        habit = Habit("Meditate", "Health", "Daily", "minutes")
+        habit = Habit("Meditate", "Health", "Daily", "minutes", "numeric")
         timestamp = datetime(2025, 1, 1, 8, 30)
         habit.log.append({"timestamp": timestamp, "note": "legacy"})
         manager.habits.append(habit)
@@ -50,9 +51,28 @@ class FunctionTests(unittest.TestCase):
         self.assertEqual(loaded.habits[0].log[0]["value"], 0.0)
         self.assertEqual(loaded.habits[0].log[0]["unit"], "minutes")
 
+    def test_boolean_habit_roundtrip(self):
+        manager = HabitManager()
+        manager.habits = []
+
+        habit = Habit("Clean", "Productivity", "Weekly", "completion", "boolean")
+        timestamp = datetime(2025, 1, 1, 8, 30)
+        habit.log.append({"timestamp": timestamp, "value": 1.0, "completed": True, "unit": "completion", "note": "Done"})
+        manager.habits.append(habit)
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            target = Path(tmp_dir) / "habits.json"
+            save_habits(manager, str(target))
+            loaded = load_habits(str(target))
+
+        loaded_habit = loaded.habits[0]
+        self.assertEqual(loaded_habit.tracking_type, "boolean")
+        self.assertTrue(loaded_habit.log[0]["completed"])
+        self.assertEqual(loaded_habit.log[0]["value"], 1.0)
+
     def test_generate_habit_pdf_returns_data(self):
-        habit = Habit("Workout", "Health", "Daily", "km")
-        habit.log_progress(5, "Evening run")
+        habit = Habit("Workout", "Health", "Daily", "km", "numeric")
+        habit.log_progress(value=5, note="Evening run")
 
         try:
             pdf_data = generate_habit_pdf(habit)

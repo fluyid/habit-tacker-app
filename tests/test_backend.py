@@ -6,8 +6,8 @@ from backend import Habit, HabitManager
 
 class HabitTests(unittest.TestCase):
     def test_log_progress_and_stats(self):
-        habit = Habit("Drink Water", "Health", "Daily", "ml")
-        habit.log_progress(500, "Morning hydration")
+        habit = Habit("Drink Water", "Health", "Daily", "ml", "numeric")
+        habit.log_progress(value=500, note="Morning hydration")
 
         stats = habit.get_stats()
         self.assertEqual(stats["total_entries"], 1)
@@ -16,17 +16,17 @@ class HabitTests(unittest.TestCase):
         self.assertEqual(stats["last_entry"]["unit"], "ml")
 
     def test_show_log_without_entries(self):
-        habit = Habit("Meditate", "Health", "Daily", "minutes")
+        habit = Habit("Meditate", "Health", "Daily", "minutes", "numeric")
         self.assertEqual(habit.show_log(), "No entries yet")
 
     def test_get_total_value(self):
-        habit = Habit("Run", "Health", "Daily", "km")
-        habit.log_progress(3)
-        habit.log_progress(2.5)
+        habit = Habit("Run", "Health", "Daily", "km", "numeric")
+        habit.log_progress(value=3)
+        habit.log_progress(value=2.5)
         self.assertEqual(habit.get_total_value(), 5.5)
 
     def test_calculate_streak_daily(self):
-        habit = Habit("Workout", "Health", "Daily", "reps")
+        habit = Habit("Workout", "Health", "Daily", "reps", "numeric")
         today = datetime.now().date()
 
         for delta_days in [0, 1, 2, 4]:
@@ -40,7 +40,7 @@ class HabitTests(unittest.TestCase):
         self.assertEqual(habit.calculate_streak(), 3)
 
     def test_calculate_streak_weekly(self):
-        habit = Habit("Clean", "Productivity", "Weekly", "minutes")
+        habit = Habit("Clean", "Productivity", "Weekly", "minutes", "numeric")
         today = datetime.now().date()
 
         for delta_weeks in [0, 1, 2, 4]:
@@ -54,7 +54,7 @@ class HabitTests(unittest.TestCase):
         self.assertEqual(habit.calculate_streak(), 3)
 
     def test_calculate_longest_streak_daily(self):
-        habit = Habit("Read", "Growth", "Daily", "pages")
+        habit = Habit("Read", "Growth", "Daily", "pages", "numeric")
         base = datetime.now().date()
 
         for delta_days in [10, 9, 8, 5, 4]:
@@ -68,7 +68,7 @@ class HabitTests(unittest.TestCase):
         self.assertEqual(habit.calculate_longest_streak(), 3)
 
     def test_calculate_longest_streak_weekly(self):
-        habit = Habit("Groceries", "Productivity", "Weekly", "count")
+        habit = Habit("Groceries", "Productivity", "Weekly", "count", "numeric")
         base = datetime.now().date()
 
         for delta_weeks in [8, 7, 6, 3, 2]:
@@ -81,13 +81,23 @@ class HabitTests(unittest.TestCase):
 
         self.assertEqual(habit.calculate_longest_streak(), 3)
 
+    def test_boolean_habit_logs_yes_no(self):
+        habit = Habit("Clean the house", "Productivity", "Weekly", "completion", "boolean")
+        habit.log_progress(completed=True, note="Deep clean")
+        habit.log_progress(completed=False, note="Skipped this week")
+
+        counts = habit.get_completion_counts()
+        self.assertEqual(counts["yes"], 1)
+        self.assertEqual(counts["no"], 1)
+        self.assertEqual(habit.get_total_value(), 1.0)
+
 
 class HabitManagerTests(unittest.TestCase):
     def test_get_habits_by_periodicity(self):
         manager = HabitManager()
         manager.habits = []
-        manager.create_habit("Workout", "Health", "Daily", "reps")
-        manager.create_habit("Clean", "Productivity", "Weekly", "minutes")
+        manager.create_habit("Workout", "Health", "Daily", "reps", "numeric")
+        manager.create_habit("Clean", "Productivity", "Weekly", "completion", "boolean")
 
         daily_habits = manager.get_habits_by_periodicity("daily")
         self.assertEqual([habit.name for habit in daily_habits], ["Workout"])
@@ -96,8 +106,8 @@ class HabitManagerTests(unittest.TestCase):
         manager = HabitManager()
         manager.habits = []
 
-        daily_habit = manager.create_habit("Workout", "Health", "Daily", "reps")
-        weekly_habit = manager.create_habit("Clean", "Productivity", "Weekly", "minutes")
+        daily_habit = manager.create_habit("Workout", "Health", "Daily", "reps", "numeric")
+        weekly_habit = manager.create_habit("Clean", "Productivity", "Weekly", "completion", "boolean")
         today = datetime.now().date()
 
         for delta_days in [0, 1, 2]:
@@ -112,7 +122,8 @@ class HabitManagerTests(unittest.TestCase):
             weekly_habit.log.append({
                 "timestamp": datetime.combine(today - timedelta(weeks=delta_weeks), datetime.min.time()),
                 "value": 1.0,
-                "unit": "minutes",
+                "completed": True,
+                "unit": "completion",
                 "note": "done",
             })
 
@@ -121,14 +132,15 @@ class HabitManagerTests(unittest.TestCase):
     def test_update_habit_all_fields(self):
         manager = HabitManager()
         manager.habits = []
-        manager.create_habit("Run", "Health", "Daily", "km")
+        manager.create_habit("Run", "Health", "Daily", "km", "numeric")
 
         ok, message = manager.update_habit(
             current_name="Run",
             new_name="Morning Run",
             category="Productivity",
             frequency="Weekly",
-            unit="minutes"
+            unit="completion",
+            tracking_type="boolean"
         )
 
         self.assertTrue(ok)
@@ -137,20 +149,22 @@ class HabitManagerTests(unittest.TestCase):
         self.assertIsNotNone(updated)
         self.assertEqual(updated.category, "Productivity")
         self.assertEqual(updated.frequency, "Weekly")
-        self.assertEqual(updated.unit, "minutes")
+        self.assertEqual(updated.unit, "completion")
+        self.assertEqual(updated.tracking_type, "boolean")
 
     def test_update_habit_duplicate_name_fails(self):
         manager = HabitManager()
         manager.habits = []
-        manager.create_habit("Run", "Health", "Daily", "km")
-        manager.create_habit("Walk", "Health", "Daily", "km")
+        manager.create_habit("Run", "Health", "Daily", "km", "numeric")
+        manager.create_habit("Walk", "Health", "Daily", "km", "numeric")
 
         ok, message = manager.update_habit(
             current_name="Run",
             new_name="Walk",
             category="Health",
             frequency="Daily",
-            unit="km"
+            unit="km",
+            tracking_type="numeric"
         )
 
         self.assertFalse(ok)

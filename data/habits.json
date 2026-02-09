@@ -1,0 +1,72 @@
+[
+    {
+        "name": "Run",
+        "category": "Health",
+        "frequency": "Daily",
+        "tracking_type": "numeric",
+        "unit": "km",
+        "log": [
+            {
+                "timestamp": "2025-04-30T15:34:25.588973",
+                "value": 1.0,
+                "completed": null,
+                "unit": "km",
+                "note": "Ran 5 kms"
+            }
+        ]
+    },
+    {
+        "name": "Read a book",
+        "category": "Growth",
+        "frequency": "Daily",
+        "tracking_type": "numeric",
+        "unit": "pages",
+        "log": []
+    },
+    {
+        "name": "Clean the house",
+        "category": "Productivity",
+        "frequency": "Weekly",
+        "tracking_type": "boolean",
+        "unit": "completion",
+        "log": [
+            {
+                "timestamp": "2025-04-23T14:12:20.532115",
+                "value": 1.0,
+                "completed": true,
+                "unit": "completion",
+                "note": "Vacuumed the house"
+            },
+            {
+                "timestamp": "2025-04-30T14:19:33.033945",
+                "value": 1.0,
+                "completed": true,
+                "unit": "completion",
+                "note": "Painted the house"
+            },
+            {
+                "timestamp": "2025-04-30T14:28:59.985910",
+                "value": 1.0,
+                "completed": true,
+                "unit": "completion",
+                "note": "Vacuumed the house"
+            }
+        ]
+    },
+    {
+        "name": "Meditate",
+        "category": "Health",
+        "frequency": "Daily",
+        "tracking_type": "numeric",
+        "unit": "minutes",
+        "log": []
+    },
+    {
+        "name": "Grocery Shopping",
+        "category": "Productivity",
+        "frequency": "Weekly",
+        "tracking_type": "numeric",
+        "unit": "count",
+        "log": []
+    }
+]

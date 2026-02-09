@@ -1,85 +1,69 @@
 # Habit Tracker App
 
-A Streamlit-based habit tracker where you can:
-- create habits with custom units (`km`, `minutes`, `reps`, `ml`, etc.)
-- log numeric progress over time
-- track streaks and totals
-- edit habit settings from one place
-- export a PDF report
+A Streamlit habit tracker where you can create habits, log progress, track streaks, and export PDF reports.
 
-It also includes a small JSON API (`swift_backend.py`) so a Swift app can reuse the same data.
+## Features
 
-## What the app does
-
-- Habit creation with:
+- Create habits with:
   - name
   - category
-  - frequency (`Daily` or `Weekly`)
-  - unit (preset or custom)
-- Habit editing from one `Edit Habit` button per habit:
+  - frequency (`Daily` / `Weekly`)
+  - tracking type:
+    - `Numeric` (unit-based: `km`, `minutes`, `reps`, `ml`, custom)
+    - `Yes/No` (completion-style habits like "Clean the house")
+- Edit a habit from one place (single `Edit Habit` button):
   - name
   - category
   - frequency
+  - tracking type
   - unit
-- Progress logging:
-  - numeric value tied to the habit unit
-  - optional note
-- Analytics:
-  - current streak
-  - longest streak
-  - total logged value per habit
+- Log entries:
+  - numeric value + optional note for numeric habits
+  - `Yes`/`No` + optional note for boolean habits
+- Metrics:
+  - total logs
+  - total value (numeric habits)
+  - yes/no counts (boolean habits)
+  - current streak and longest streak
   - longest streak across all habits
-  - frequency filter (daily/weekly)
-- PDF export per habit
-- JSON persistence in `habits.json`
-
-## Tech stack
-
-- Python 3
-- Streamlit
-- Pandas
-- fpdf2 (for PDF export)
-- Built-in `http.server` for API mode
+- Filter habits by frequency
+- Export per-habit PDF report
+- Persist data in JSON
 
 ## Project structure
 
-- `main.py`: Streamlit frontend
-- `backend.py`: core habit models, streak logic, and manager operations
-- `functions.py`: JSON save/load + PDF generation
-- `swift_backend.py`: lightweight REST-like API for mobile integration
-- `open_app.sh`: one-command launcher that opens the browser
+- `main.py`: Streamlit UI
+- `backend.py`: core models + streak logic + manager ops
+- `functions.py`: JSON persistence + PDF generation
+- `scripts/swift_backend.py`: lightweight HTTP API (**Work in Progress**)
+- `scripts/open_app.sh`: launch script that also opens browser
 - `tests/`: unit tests
-- `habits.json`: persisted app data
+- `data/habits.json`: persisted app data
 
 ## Setup
 
-From the project root:
+1. Clone/download this repo.
+2. Open a terminal in the project root (the folder containing `main.py`).
+3. (Recommended) Create and activate a virtual environment:
 
 ```bash
-cd /Users/kailashnah/PycharmProjects/habit-tacker-app
-```
-
-If you already have the provided virtualenv (`.venv`), activate it:
-
-```bash
+python3 -m venv .venv
 source .venv/bin/activate
 ```
 
-If you need dependencies in a fresh env:
+4. Install dependencies:
 
 ```bash
-pip install streamlit pandas fpdf2
+pip install -r requirements.txt
 ```
 
 ## Run the app
 
-### Fastest way (recommended)
+### Quick way
 
 ```bash
-./open_app.sh
+./scripts/open_app.sh
 ```
-
-This starts Streamlit and opens `http://localhost:8501` in your browser.
 
 ### Manual way
 
@@ -87,36 +71,27 @@ This starts Streamlit and opens `http://localhost:8501` in your browser.
 streamlit run main.py --server.address 127.0.0.1 --server.port 8501
 ```
 
-## Optional auth
-
-If you want a simple password gate in the sidebar:
-
-```bash
-export HABIT_APP_PASSWORD='your-password'
-./open_app.sh
-```
-
-If `HABIT_APP_PASSWORD` is not set, auth is skipped.
+Open: `http://localhost:8501`
 
 ## Run tests
 
-With the project virtualenv:
-
 ```bash
-./.venv/bin/python -m unittest discover -s tests -v
+python -m unittest discover -s tests -v
 ```
 
-## API mode (for Swift/mobile)
+## API (Work in Progress)
 
-Start API server:
+`scripts/swift_backend.py` is currently an early integration layer for mobile/Swift work.
+
+Start it with:
 
 ```bash
-./.venv/bin/python swift_backend.py
+python scripts/swift_backend.py
 ```
 
 Default URL: `http://127.0.0.1:8080`
 
-### Endpoints
+Current routes:
 
 - `GET /health`
 - `GET /habits`
@@ -126,17 +101,25 @@ Default URL: `http://127.0.0.1:8080`
 - `POST /habits`
 - `POST /habits/{name}/logs`
 
-### Example requests
+### API examples
 
-Create habit:
+Create numeric habit:
 
 ```bash
 curl -X POST http://127.0.0.1:8080/habits \
   -H 'Content-Type: application/json' \
-  -d '{"name":"Run","category":"Health","frequency":"Daily","unit":"km"}'
+  -d '{"name":"Run","category":"Health","frequency":"Daily","tracking_type":"numeric","unit":"km"}'
 ```
 
-Log progress:
+Create yes/no habit:
+
+```bash
+curl -X POST http://127.0.0.1:8080/habits \
+  -H 'Content-Type: application/json' \
+  -d '{"name":"Clean the house","category":"Productivity","frequency":"Weekly","tracking_type":"boolean"}'
+```
+
+Log numeric progress:
 
 ```bash
 curl -X POST http://127.0.0.1:8080/habits/Run/logs \
@@ -144,20 +127,32 @@ curl -X POST http://127.0.0.1:8080/habits/Run/logs \
   -d '{"value":5.2,"note":"easy pace"}'
 ```
 
-## Data format (`habits.json`)
+Log yes/no progress:
 
-Each habit includes `unit`, and each log entry stores numeric `value`:
+```bash
+curl -X POST http://127.0.0.1:8080/habits/Clean%20the%20house/logs \
+  -H 'Content-Type: application/json' \
+  -d '{"completed":true,"note":"done before lunch"}'
+```
+
+## Data format
+
+Data is stored in `data/habits.json`.
+
+Example shape:
 
 ```json
 {
   "name": "Run",
   "category": "Health",
   "frequency": "Daily",
+  "tracking_type": "numeric",
   "unit": "km",
   "log": [
     {
       "timestamp": "2026-02-08T12:00:00",
       "value": 5.2,
+      "completed": null,
       "unit": "km",
       "note": "easy pace"
     }
@@ -165,7 +160,9 @@ Each habit includes `unit`, and each log entry stores numeric `value`:
 }
 ```
 
+For boolean habits, `value` is `1.0` (Yes) or `0.0` (No), and `completed` is `true`/`false`.
+
 ## Notes
 
-- Older JSON entries are handled with backward compatibility when loading.
-- PDF export depends on `fpdf2`; if missing, the rest of the app still works.
+- Older JSON formats are auto-upgraded when loading.
+- PDF export needs `fpdf2`; if missing, the rest of the app still runs.
