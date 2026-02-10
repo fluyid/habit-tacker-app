@@ -91,6 +91,41 @@ class HabitTests(unittest.TestCase):
         self.assertEqual(counts["no"], 1)
         self.assertEqual(habit.get_total_value(), 1.0)
 
+    def test_daily_needs_update(self):
+        habit = Habit("Run", "Health", "Daily", "km", "numeric")
+        reference = datetime(2026, 2, 9, 9, 0)
+        self.assertTrue(habit.needs_update(reference))
+
+        habit.log.append({
+            "timestamp": reference - timedelta(hours=1),
+            "value": 5.0,
+            "completed": None,
+            "unit": "km",
+            "note": "morning run",
+        })
+        self.assertFalse(habit.needs_update(reference))
+
+    def test_weekly_needs_update_only_in_last_48_hours(self):
+        habit = Habit("Clean", "Productivity", "Weekly", "completion", "boolean")
+
+        # Wednesday noon: outside 48-hour reminder window.
+        midweek = datetime(2026, 2, 11, 12, 0)
+        self.assertFalse(habit.needs_update(midweek))
+
+        # Saturday noon: within last 48h before week end, no log yet.
+        weekend_window = datetime(2026, 2, 14, 12, 0)
+        self.assertTrue(habit.needs_update(weekend_window))
+
+        # If logged this week, reminder should go away.
+        habit.log.append({
+            "timestamp": datetime(2026, 2, 10, 10, 0),
+            "value": 1.0,
+            "completed": True,
+            "unit": "completion",
+            "note": "done",
+        })
+        self.assertFalse(habit.needs_update(weekend_window))
+
 
 class HabitManagerTests(unittest.TestCase):
     def test_get_habits_by_periodicity(self):

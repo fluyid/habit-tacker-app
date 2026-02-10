@@ -55,7 +55,6 @@ with st.sidebar.form(key="create_habit_form"):
 
 # Main Area
 st.header("Manage Your Habits")
-st.subheader("Portfolio Extensions")
 periodicity_choice = st.selectbox("Filter habits by periodicity", options=("Daily", "Weekly"))
 matching_habits = habits.get_habits_by_periodicity(periodicity_choice)
 if matching_habits:
@@ -66,7 +65,8 @@ st.metric(label="Longest Run Streak Across All Habits", value=habits.get_longest
 
 if habits.habits:
     for idx, habit in enumerate(habits.habits):
-        with st.expander(f"🔷 {habit.name}"):
+        reminder_tag = "  🟨 Update required" if habit.needs_update() else ""
+        with st.expander(f"🔷 {habit.name}{reminder_tag}"):
             # Habit Info
             st.write(f"**Category:** {habit.category}")
             st.write(f"**Frequency:** {habit.frequency.capitalize()}")
@@ -197,7 +197,8 @@ if habits.habits:
                 st.metric(label="No Count", value=completion_counts["no"])
             else:
                 st.metric(label=f"Total {habit.unit}", value=habit.get_total_value())
-            st.metric(label="Current Streak", value=f"{streak} days")
+            streak_unit = "times" if habit.frequency == "Weekly" else "days"
+            st.metric(label="Current Streak", value=f"{streak} {streak_unit}")
 
             # Mini progress graph
             df = habit.get_logs_as_dataframe()

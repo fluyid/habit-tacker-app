@@ -12,6 +12,13 @@
                 "completed": null,
                 "unit": "km",
                 "note": "Ran 5 kms"
+            },
+            {
+                "timestamp": "2026-02-10T00:21:01.963318",
+                "value": 7.0,
+                "completed": null,
+                "unit": "km",
+                "note": ""
             }
         ]
     },
@@ -21,7 +28,15 @@
         "frequency": "Daily",
         "tracking_type": "numeric",
         "unit": "pages",
-        "log": []
+        "log": [
+            {
+                "timestamp": "2026-02-10T00:21:16.382572",
+                "value": 21.0,
+                "completed": null,
+                "unit": "pages",
+                "note": ""
+            }
+        ]
     },
     {
         "name": "Clean the house",

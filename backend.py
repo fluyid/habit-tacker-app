@@ -102,6 +102,30 @@ class Habit:
         no_count = sum(1 for entry in self.log if entry.get("completed") is False)
         return {"yes": yes_count, "no": no_count}
 
+    def _has_log_for_date(self, target_date):
+        return any(entry["timestamp"].date() == target_date for entry in self.log)
+
+    def _has_log_in_week(self, reference_time):
+        week_start = (reference_time - timedelta(days=reference_time.weekday())).date()
+        week_end = week_start + timedelta(days=7)
+        return any(week_start <= entry["timestamp"].date() < week_end for entry in self.log)
+
+    def needs_update(self, reference_time=None):
+        """Return True when this habit should show an update reminder."""
+        now = reference_time or datetime.now()
+
+        if self.frequency == "Daily":
+            return not self._has_log_for_date(now.date())
+
+        # Weekly reminder: only show in the last 48h of the week if this week has no entry.
+        week_start = now - timedelta(days=now.weekday())
+        week_end = week_start + timedelta(days=7)
+        reminder_start = week_end - timedelta(hours=48)
+        in_reminder_window = reminder_start <= now < week_end
+        if not in_reminder_window:
+            return False
+        return not self._has_log_in_week(now)
+
     def calculate_streak(self):
         """Current streak from today backwards (daily or weekly)."""
         if not self.log:
