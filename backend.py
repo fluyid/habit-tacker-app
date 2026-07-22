@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 import pandas as pd
+import analytics
 
 
 class Habit:
@@ -127,64 +128,66 @@ class Habit:
         return not self._has_log_in_week(now)
 
     def calculate_streak(self):
-        """Current streak from today backwards (daily or weekly)."""
-        if not self.log:
-            return 0
-
-        streak = 0
-        today = datetime.now().date()
-
-        if self.frequency == "Daily":
-            dates = sorted({entry["timestamp"].date() for entry in self.log}, reverse=True)
-            for i, date in enumerate(dates):
-                expected_date = today - timedelta(days=i)
-                if date == expected_date:
-                    streak += 1
-                else:
-                    break
-            return streak
-
-        week_start_dates = sorted({
-            entry["timestamp"].date() - timedelta(days=entry["timestamp"].date().weekday())
-            for entry in self.log
-        }, reverse=True)
-        current_week_start = today - timedelta(days=today.weekday())
-
-        for i, week_start in enumerate(week_start_dates):
-            expected_week_start = current_week_start - timedelta(weeks=i)
-            if week_start == expected_week_start:
-                streak += 1
-            else:
-                break
-        return streak
+        # """Current streak from today backwards (daily or weekly)."""
+        # if not self.log:
+        #     return 0
+        #
+        # streak = 0
+        # today = datetime.now().date()
+        #
+        # if self.frequency == "Daily":
+        #     dates = sorted({entry["timestamp"].date() for entry in self.log}, reverse=True)
+        #     for i, date in enumerate(dates):
+        #         expected_date = today - timedelta(days=i)
+        #         if date == expected_date:
+        #             streak += 1
+        #         else:
+        #             break
+        #     return streak
+        #
+        # week_start_dates = sorted({
+        #     entry["timestamp"].date() - timedelta(days=entry["timestamp"].date().weekday())
+        #     for entry in self.log
+        # }, reverse=True)
+        # current_week_start = today - timedelta(days=today.weekday())
+        #
+        # for i, week_start in enumerate(week_start_dates):
+        #     expected_week_start = current_week_start - timedelta(weeks=i)
+        #     if week_start == expected_week_start:
+        #         streak += 1
+        #     else:
+        #         break
+        # return streak
+        return analytics.current_streak(self.log, self.frequency)
 
     def calculate_longest_streak(self):
         """Best streak ever recorded for this habit."""
-        if not self.log:
-            return 0
-
-        longest = 1
-        current = 1
-        if self.frequency == "Daily":
-            dates = sorted({entry["timestamp"].date() for entry in self.log})
-            for i in range(1, len(dates)):
-                if dates[i] == dates[i - 1] + timedelta(days=1):
-                    current += 1
-                    longest = max(longest, current)
-                else:
-                    current = 1
-        else:
-            week_start_dates = sorted({
-                entry["timestamp"].date() - timedelta(days=entry["timestamp"].date().weekday())
-                for entry in self.log
-            })
-            for i in range(1, len(week_start_dates)):
-                if week_start_dates[i] - week_start_dates[i - 1] == timedelta(weeks=1):
-                    current += 1
-                    longest = max(longest, current)
-                else:
-                    current = 1
-        return longest
+        # if not self.log:
+        #     return 0
+        #
+        # longest = 1
+        # current = 1
+        # if self.frequency == "Daily":
+        #     dates = sorted({entry["timestamp"].date() for entry in self.log})
+        #     for i in range(1, len(dates)):
+        #         if dates[i] == dates[i - 1] + timedelta(days=1):
+        #             current += 1
+        #             longest = max(longest, current)
+        #         else:
+        #             current = 1
+        # else:
+        #     week_start_dates = sorted({
+        #         entry["timestamp"].date() - timedelta(days=entry["timestamp"].date().weekday())
+        #         for entry in self.log
+        #     })
+        #     for i in range(1, len(week_start_dates)):
+        #         if week_start_dates[i] - week_start_dates[i - 1] == timedelta(weeks=1):
+        #             current += 1
+        #             longest = max(longest, current)
+        #         else:
+        #             current = 1
+        # return longest
+        return analytics.longest_streak(self.log, self.frequency)
 
 
 class HabitManager:
@@ -273,13 +276,15 @@ class HabitManager:
 
     def get_habits_by_periodicity(self, frequency):
         """Get all habits that match the requested frequency."""
-        return [
-            habit for habit in self.habits
-            if habit.frequency.lower() == frequency.lower()
-        ]
+        # return [
+        #     habit for habit in self.habits
+        #     if habit.frequency.lower() == frequency.lower()
+        # ]
+        return analytics.get_habits_by_periodicity(self.habits, frequency)
 
     def get_longest_run_streak(self):
         """Return the highest longest-streak value across all habits."""
-        if not self.habits:
-            return 0
-        return max(habit.calculate_longest_streak() for habit in self.habits)
+        # if not self.habits:
+        #     return 0
+        # return max(habit.calculate_longest_streak() for habit in self.habits)
+        return analytics.get_longest_streak_all(self.habits)
