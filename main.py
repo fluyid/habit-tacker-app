@@ -83,6 +83,29 @@ if habits.habits:
             if st.button("Edit Habit", key=f"toggle_edit_{idx}"):
                 st.session_state[edit_state_key] = not st.session_state[edit_state_key]
 
+            delete_state_key = f"confirm_delete_{idx}"
+            if delete_state_key not in st.session_state:
+                st.session_state[delete_state_key] = False
+
+            if st.button("Delete Habit", key=f"toggle_delete_{idx}"):
+                st.session_state[delete_state_key] = True
+
+            if st.session_state[delete_state_key]:
+                st.warning(f"Delete '{habit.name}' and all its logs? This cannot be undone.")
+                confirm_col, cancel_col = st.columns(2)
+                if confirm_col.button("Yes, delete", key=f"confirm_delete_btn_{idx}"):
+                    success, message = habits.delete_habit(habit.name)
+                    if success:
+                        save_habits(habits)
+                        st.session_state[delete_state_key] = False
+                        st.success(message)
+                        st.rerun()
+                    else:
+                        st.error(message)
+                if cancel_col.button("Cancel", key=f"cancel_delete_btn_{idx}"):
+                    st.session_state[delete_state_key] = False
+                    st.rerun()
+
             if st.session_state[edit_state_key]:
                 current_category = habit.category if habit.category in CATEGORY_OPTIONS else CATEGORY_OPTIONS[0]
                 current_frequency = habit.frequency if habit.frequency in FREQUENCY_OPTIONS else FREQUENCY_OPTIONS[0]

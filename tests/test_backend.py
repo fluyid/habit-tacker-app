@@ -205,6 +205,27 @@ class HabitManagerTests(unittest.TestCase):
         self.assertFalse(ok)
         self.assertEqual(message, "Habit 'Walk' already exists.")
 
+    def test_delete_habit_removes_it(self):
+        manager = HabitManager()
+        manager.habits = []
+        manager.create_habit("Workout", "Health", "Daily", "reps", "numeric")
+        manager.create_habit("Read", "Growth", "Daily", "pages", "numeric")
+
+        ok, _ = manager.delete_habit("Workout")
+
+        self.assertTrue(ok)
+        self.assertEqual(manager.get_habit_names(), ["Read"])
+
+    def test_delete_habit_that_does_not_exist_fails(self):
+        manager = HabitManager()
+        manager.habits = []
+        manager.create_habit("Read", "Growth", "Daily", "pages", "numeric")
+
+        ok, message = manager.delete_habit("Nope")
+
+        self.assertFalse(ok)
+        self.assertEqual(manager.get_habit_names(), ["Read"])
+
 
 if __name__ == "__main__":
     unittest.main()

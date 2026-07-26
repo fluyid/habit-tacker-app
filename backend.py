@@ -240,22 +240,22 @@ class HabitManager:
         """Edit a habit in one shot: name, category, frequency, unit, and type."""
         habit = self.get_habit_by_name(current_name)
         if habit is None:
-            return False, "Habit not found."
+            return False, "Habit not found"
 
         normalized_name = new_name.strip()
         normalized_unit = unit.strip()
         if not normalized_name:
-            return False, "Habit name is required."
+            return False, "Habit name is required"
         if not normalized_unit:
             return False, "Unit is required."
         if frequency not in {"Daily", "Weekly"}:
-            return False, "Frequency must be Daily or Weekly."
+            return False, "Frequency must be Daily or Weekly"
         if tracking_type not in {"numeric", "boolean"}:
-            return False, "Tracking type must be numeric or boolean."
+            return False, "Tracking type must be numeric or boolean"
 
         existing = self.get_habit_by_name(normalized_name)
         if existing is not None and existing is not habit:
-            return False, f"Habit '{normalized_name}' already exists."
+            return False, f"Habit '{normalized_name}' already exists"
 
         habit.name = normalized_name
         habit.category = category
@@ -272,7 +272,19 @@ class HabitManager:
                 entry["value"] = 1.0 if entry["completed"] else 0.0
             else:
                 entry["completed"] = None
-        return True, "Habit updated successfully."
+        return True, "Habit updated successfully"
+
+    def delete_habit(self, name):
+        """Delete a habit by name.
+
+        Returns a (success, message) tuple to match update_habit so the UI can
+        show feedback the same way for both actions.
+        """
+        habit = self.get_habit_by_name(name)
+        if habit is None:
+            return False, "Habit not found"
+        self.habits.remove(habit)
+        return True, f"Habit '{name}' deleted"
 
     def get_habits_by_periodicity(self, frequency):
         """Get all habits that match the requested frequency."""
