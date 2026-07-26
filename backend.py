@@ -14,8 +14,13 @@ class Habit:
         self.tracking_type = tracking_type
         self.log = []
 
-    def log_progress(self, value=None, note="", completed=None):
-        """Add one entry. Numeric habits use value, Yes/No habits use completed."""
+    def log_progress(self, value=None, note="", completed=None, timestamp=None):
+        """Add one entry. Numeric habits use value, Yes/No habits use completed.
+
+        timestamp is optional. When omitted the entry is stamped with the current
+        time. Passing an explicit datetime lets callers backdate entries, which is
+        how the predefined example data and tests build multi week histories.
+        """
         if self.tracking_type == "boolean":
             if completed is None:
                 raise ValueError("Boolean habits need a Yes/No completion value.")
@@ -28,7 +33,7 @@ class Habit:
             bool_completed = None
 
         entry = {
-            "timestamp": datetime.now(),
+            "timestamp": timestamp or datetime.now(),
             "value": numeric_value,
             "unit": self.unit,
             "completed": bool_completed,
@@ -210,11 +215,11 @@ class HabitManager:
         self.habits.append(new_habit)
         return new_habit
 
-    def log_habit(self, habit_name, value=None, note="", completed=None):
+    def log_habit(self, habit_name, value=None, note="", completed=None, timestamp=None):
         """Log progress for a habit by name. Returns True if it worked."""
         for habit in self.habits:
             if habit.name == habit_name:
-                habit.log_progress(value=value, note=note, completed=completed)
+                habit.log_progress(value=value, note=note, completed=completed, timestamp=timestamp)
                 return True
         return False
 
