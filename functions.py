@@ -10,38 +10,39 @@ DEFAULT_DATA_FILE = os.path.join(DATA_DIR, "habits.json")
 def generate_habit_pdf(habit):
     """Build a simple PDF report for one habit and return it as bytes."""
     from fpdf import FPDF
+    from fpdf.enums import XPos, YPos
 
     pdf = FPDF()
     pdf.add_page()
-    pdf.add_font(family="DejaVu", style="", fname="DejaVuSans.ttf", uni=True)
+    pdf.add_font(family="DejaVu", style="", fname="DejaVuSans.ttf")
     pdf.set_font("DejaVu", size=12)
 
     # Title
-    pdf.cell(w=200, h=10, text=f"Habit Report {habit.name}", ln=True, align="C")
+    pdf.cell(w=200, h=10, text=f"Habit Report {habit.name}", new_x=XPos.LMARGIN, new_y=YPos.NEXT, align="C")
 
     # Basic Info
     pdf.ln(h=10)
-    pdf.cell(w=200, h=10, text=f"Category: {habit.category}", ln=True)
-    pdf.cell(w=200, h=10, text=f"Frequency: {habit.frequency}", ln=True)
-    pdf.cell(w=200, h=10, text=f"Tracking Type: {habit.tracking_type}", ln=True)
-    pdf.cell(w=200, h=10, text=f"Unit: {habit.unit}", ln=True)
+    pdf.cell(w=200, h=10, text=f"Category: {habit.category}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.cell(w=200, h=10, text=f"Frequency: {habit.frequency}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.cell(w=200, h=10, text=f"Tracking Type: {habit.tracking_type}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.cell(w=200, h=10, text=f"Unit: {habit.unit}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
     # Stats
     stats = habit.get_stats()
     streak = habit.calculate_streak()
 
     pdf.ln(h=10)
-    pdf.cell(w=200, h=10, text=f"Total Logs: {stats['total_entries']}", ln=True)
+    pdf.cell(w=200, h=10, text=f"Total Logs: {stats['total_entries']}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     if habit.tracking_type == "boolean":
         counts = habit.get_completion_counts()
-        pdf.cell(w=200, h=10, text=f"Yes: {counts['yes']} | No: {counts['no']}", ln=True)
+        pdf.cell(w=200, h=10, text=f"Yes: {counts['yes']} | No: {counts['no']}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     else:
-        pdf.cell(w=200, h=10, text=f"Total {habit.unit}: {habit.get_total_value()}", ln=True)
-    pdf.cell(w=200, h=10, text=f"Current Streak: {streak} days", ln=True)
+        pdf.cell(w=200, h=10, text=f"Total {habit.unit}: {habit.get_total_value()}", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    pdf.cell(w=200, h=10, text=f"Current Streak: {streak} days", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
 
     # Log Timeline
     pdf.ln(h=10)
-    pdf.cell(w=200, h=10, text="Log Timeline:", ln=True)
+    pdf.cell(w=200, h=10, text="Log Timeline:", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     pdf.ln(h=5)
 
     if habit.log:
@@ -59,8 +60,8 @@ def generate_habit_pdf(habit):
             pdf.multi_cell(w=0, h=10, text=line)
             pdf.ln(1)
     else:
-        pdf.cell(w=200, h=10, text="No log entries yet", ln=True)
-    return pdf.output(dest="S")
+        pdf.cell(w=200, h=10, text="No log entries yet", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+    return bytes(pdf.output())
 
 
 def save_habits(habits, filename=DEFAULT_DATA_FILE):
